@@ -1,0 +1,13 @@
+backend/.venv/
+backend/.env
+frontend/node_modules/
+frontend/.next/
+frontend/public/cesium/
+data/mani.db
+data/mani.db-*
+data/lola_dem/
+data/horizons_custom/
+__pycache__/
+*.pyc
+.DS_Store
+*.log
