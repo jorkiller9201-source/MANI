@@ -69,7 +69,17 @@ export type CompareResult = {
   b: SiteBlock;
   winner_id: string;
   winner_name: string;
-  window: { start: string; end: string };
+  window: {
+    start: string;
+    end: string;
+    requested_start?: string;
+    requested_end?: string;
+    clamped?: boolean;
+    offline_catalog?: boolean;
+    live_horizons?: boolean;
+    horizons_cache_start?: string;
+    horizons_cache_end?: string;
+  };
   geo_cross?: {
     a: SiteLocation;
     b: SiteLocation;
@@ -157,6 +167,26 @@ export const authApi = {
     setToken(data.access_token);
     return data;
   },
+  async forgotPassword(email: string): Promise<{ ok: boolean; dev_logged?: boolean }> {
+    const res = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      let code = "FORGOT_PASSWORD_FAILED";
+      try {
+        const j = await res.json();
+        const d = j.detail;
+        if (typeof d === "object" && d?.code) code = d.code;
+        else if (typeof d === "string") code = d;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(code);
+    }
+    return res.json();
+  },
   me: () => api<UserMe>("/auth/me"),
   async logout() {
     try {
@@ -193,7 +223,13 @@ export type SavedReportSummary = {
 export type SavedReportDetail = SavedReportSummary & {
   printed_at?: string;
   payload: CompareResult & {
-    _meta?: { queried_at?: string; printed_at?: string; saved_by?: string; report_text?: string };
+    _meta?: {
+      queried_at?: string;
+      printed_at?: string;
+      saved_by?: string;
+      report_text?: string;
+      map_image?: string | null;
+    };
   };
 };
 
@@ -218,7 +254,8 @@ export type SkySnapshot = {
 };
 
 export const dataApi = {
-  sites: () => api<{ sites: Site[] }>("/sites"),
+  sites: () =>
+    api<{ sites: Site[]; horizons_window?: { start: string; end: string } | null }>("/sites"),
   compare: (body: CompareRequest) =>
     api<CompareResult>("/compare", {
       method: "POST",
@@ -254,4 +291,9 @@ export const reportsApi = {
     payload: object;
   }) => api<SavedReportDetail>("/reports", { method: "POST", body: JSON.stringify(body) }),
   remove: (id: number) => api<{ ok: boolean }>(`/reports/${id}`, { method: "DELETE" }),
+  patchMapImage: (id: number, map_image: string) =>
+    api<{ ok: boolean }>(`/reports/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ map_image }),
+    }),
 };

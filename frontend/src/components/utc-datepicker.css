@@ -1,0 +1,81 @@
+/* react-datepicker — tema MANI (inspirado en SKADI / Heimdall alertas-categoria) */
+.mani-utc-datepicker-popper .react-datepicker {
+  background-color: rgb(8 8 10);
+  border: 1px solid rgb(196 165 116 / 0.35);
+  border-radius: 0.5rem;
+  font-family: inherit;
+  color: rgb(243 244 246);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.55);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__header {
+  background-color: rgb(20 20 24);
+  border-bottom: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 0.5rem 0.5rem 0 0;
+  padding-top: 0.5rem;
+}
+
+.mani-utc-datepicker-popper .react-datepicker__current-month,
+.mani-utc-datepicker-popper .react-datepicker-time__header,
+.mani-utc-datepicker-popper .react-datepicker-year-header {
+  color: rgb(242 210 122);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__day-name {
+  color: rgb(156 163 175);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__day {
+  color: rgb(229 231 235);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__day:hover {
+  background-color: rgb(55 55 60);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__day--selected,
+.mani-utc-datepicker-popper .react-datepicker__day--keyboard-selected {
+  background-color: rgb(196 165 116) !important;
+  color: rgb(11 31 58) !important;
+  font-weight: 600;
+}
+
+.mani-utc-datepicker-popper .react-datepicker__day--outside-month {
+  color: rgb(107 114 128);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__day--disabled {
+  color: rgb(75 85 99);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__navigation-icon::before {
+  border-color: rgb(196 165 116);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__triangle {
+  display: none;
+}
+
+.mani-utc-datepicker-popper .react-datepicker__time-container {
+  border-left: 1px solid rgb(255 255 255 / 0.12);
+  background-color: rgb(12 12 14);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__time-list-item {
+  color: rgb(229 231 235);
+}
+
+.mani-utc-datepicker-popper .react-datepicker__time-list-item:hover {
+  background-color: rgb(55 55 60) !important;
+  color: white !important;
+}
+
+.mani-utc-datepicker-popper .react-datepicker__time-list-item--selected {
+  background-color: rgb(196 165 116) !important;
+  color: rgb(11 31 58) !important;
+  font-weight: 600;
+}
+
+.mani-utc-datepicker-popper .react-datepicker__time-box {
+  width: 96px;
+}

@@ -1,0 +1,859 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg0: #05070d;
+  --bg1: #0b1f3a;
+  --gold: #f2d27a;
+  --ink: #e8eef6;
+}
+
+html,
+body {
+  height: 100%;
+  background: radial-gradient(1200px 600px at 20% -10%, #13294a 0%, var(--bg0) 55%);
+  color: var(--ink);
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+a {
+  color: var(--gold);
+}
+
+.cesium-viewer-bottom,
+.cesium-viewer-toolbar,
+.cesium-viewer-animationContainer,
+.cesium-viewer-timelineContainer,
+.cesium-credit-logoContainer,
+.cesium-credit-textContainer {
+  display: none !important;
+}
+
+.cesium-viewer,
+.cesium-viewer-cesiumWidgetContainer,
+.cesium-widget,
+.cesium-widget canvas {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  border: none !important;
+}
+
+/* Language selector: keep label clear of the native <select> chrome */
+.mani-lang {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.mani-lang__label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  margin-right: 0.85rem;
+}
+
+.mani-lang__select {
+  flex: 0 0 auto;
+  min-width: 7.5rem;
+  margin: 0;
+  margin-left: 0.25rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+/* —— Export / printable report —— */
+.mani-export {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.mani-export__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 14, 0.82);
+  backdrop-filter: blur(6px);
+}
+.mani-export__panel {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 100%);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1rem;
+  border: 1px solid rgba(242, 210, 122, 0.25);
+  background: linear-gradient(165deg, #0d2138 0%, #071018 55%, #05070d 100%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  overflow: hidden;
+}
+.mani-export__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(90deg, rgba(242, 210, 122, 0.08), transparent 60%);
+}
+.mani-export__toolbar-title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #f2d27a;
+}
+.mani-export__toolbar-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+.mani-export__lang {
+  margin-right: 0.5rem;
+}
+
+.mani-export__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.mani-export__btn {
+  border-radius: 0.4rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.mani-export__btn.primary {
+  background: #f2d27a;
+  color: #0b1f3a;
+}
+.mani-export__btn.primary:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.mani-export__btn.ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.mani-export__error {
+  margin: 0.5rem 1.25rem 0;
+  color: #fca5a5;
+  font-size: 0.85rem;
+}
+.mani-export__ok {
+  margin: 0.5rem 1.25rem 0;
+  color: #86efac;
+  font-size: 0.8rem;
+}
+.mani-export__scroll {
+  overflow: auto;
+  padding: 1rem;
+}
+
+.mani-sheet {
+  position: relative;
+  color: #e8eef6;
+  border-radius: 0.75rem;
+  padding: 1.75rem 1.5rem 1.5rem;
+  background:
+    radial-gradient(800px 280px at 10% -10%, rgba(126, 200, 255, 0.12), transparent 50%),
+    radial-gradient(600px 240px at 90% 0%, rgba(242, 210, 122, 0.14), transparent 45%),
+    linear-gradient(180deg, #102742 0%, #0a1628 40%, #060b14 100%);
+  border: 1px solid rgba(242, 210, 122, 0.28);
+  overflow: hidden;
+}
+.mani-sheet__glow {
+  pointer-events: none;
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 50%;
+  background: radial-gradient(ellipse at center, rgba(242, 210, 122, 0.09), transparent 70%);
+}
+.mani-sheet__head {
+  position: relative;
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.mani-sheet__logo {
+  width: 110px;
+  height: 110px;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
+}
+.mani-sheet__eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #f2d27a;
+}
+.mani-sheet__title {
+  margin: 0.35rem 0 0;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.mani-sheet__tagline {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+.mani-sheet__dates {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.25rem;
+  align-items: start;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mani-sheet__dates > div span {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.45);
+}
+.mani-sheet__dates > div strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+  word-break: break-word;
+}
+.mani-sheet__winner {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.1rem;
+  border-radius: 0.65rem;
+  background: linear-gradient(105deg, rgba(242, 210, 122, 0.22), rgba(126, 200, 255, 0.08));
+  border: 1px solid rgba(242, 210, 122, 0.4);
+  box-shadow: 0 0 40px rgba(242, 210, 122, 0.08);
+}
+.mani-sheet__winner span {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(242, 210, 122, 0.9);
+}
+.mani-sheet__winner strong {
+  font-size: 1.45rem;
+  color: #fff;
+}
+.mani-sheet__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+@media (max-width: 720px) {
+  .mani-sheet__grid {
+    grid-template-columns: 1fr;
+  }
+  .mani-sheet__dates {
+    grid-template-columns: 1fr;
+  }
+}
+.mani-sheet__site {
+  position: relative;
+  padding: 1.1rem 1rem 1rem;
+  border-radius: 0.7rem;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.mani-sheet__site-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.85rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #0b1f3a;
+  background: var(--accent);
+}
+.mani-sheet__site-name {
+  margin: 0 2rem 0 0;
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+.mani-sheet__site-loc {
+  margin: 0.35rem 0 0.85rem;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+.mani-sheet__meters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+.mani-sheet__meters > div {
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+.mani-sheet__meters span {
+  display: block;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.42);
+}
+.mani-sheet__meters strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.95rem;
+  color: #fff;
+}
+.mani-sheet__score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mani-sheet__score-row span {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+.mani-sheet__score-row em {
+  font-style: normal;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.mani-sheet__score-row small {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+.mani-sheet__narrative {
+  padding: 1rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 1rem;
+}
+.mani-sheet__narrative pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: rgba(232, 238, 246, 0.88);
+}
+.mani-sheet__foot {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.42);
+  line-height: 1.45;
+}
+.mani-sheet__foot p {
+  margin: 0.25rem 0;
+}
+.mani-sheet__stamp {
+  margin-top: 0.65rem !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(242, 210, 122, 0.55) !important;
+}
+.mani-sheet__annex {
+  position: relative;
+  margin-top: 1.35rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  break-before: page;
+  page-break-before: always;
+}
+.mani-sheet__annex-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f2d27a;
+}
+.mani-sheet__annex-lead {
+  margin: 0.4rem 0 0.75rem;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+.mani-sheet__map {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #0a0e14;
+}
+.mani-sheet__annex-caption {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+.mani-sheet__annex-coords {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 1rem;
+}
+.mani-sheet__annex-coords li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mani-sheet__annex-coords strong {
+  font-size: 0.78rem;
+  color: #f2d27a;
+}
+.mani-sheet__annex-coords li:last-child strong {
+  color: #7ec8ff;
+}
+.mani-sheet__annex-coords span {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+}
+.mani-sheet__annex-missing {
+  margin: 0;
+  padding: 1.25rem;
+  border-radius: 0.45rem;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.mani-sheet__timelines {
+  margin-bottom: 1.1rem;
+  padding: 1rem 1rem 0.25rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  break-inside: avoid;
+}
+.mani-sheet__timelines-head {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f2d27a;
+  letter-spacing: 0.03em;
+}
+.mani-sheet__timelines-lead {
+  margin: 0.4rem 0 0.85rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.52);
+}
+.mani-sheet__timeline {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.mani-sheet__timeline:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+.mani-sheet__timeline-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+}
+.mani-sheet__timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.1rem;
+  list-style: none;
+  margin: 0 0 0.35rem;
+  padding: 0;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+.mani-sheet__timeline-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.mani-sheet__timeline-swatch {
+  width: 1.1rem;
+  height: 0.22rem;
+  border-radius: 2px;
+}
+.mani-sheet__timeline-swatch--sun {
+  background: #e8b830;
+}
+.mani-sheet__timeline-swatch--earth {
+  background: #4a9eff;
+}
+.mani-sheet__timeline-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 11rem;
+}
+.mani-sheet__timeline-grid {
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1;
+}
+.mani-sheet__timeline-tick {
+  fill: rgba(255, 255, 255, 0.38);
+  font-size: 9px;
+  font-family: system-ui, sans-serif;
+}
+.mani-sheet__timeline-ylab {
+  fill: rgba(255, 255, 255, 0.38);
+  font-size: 8px;
+  font-family: system-ui, sans-serif;
+  transform: rotate(-90deg);
+  transform-origin: 8px 50%;
+}
+.mani-sheet__timeline-xlab {
+  fill: rgba(255, 255, 255, 0.45);
+  font-size: 8px;
+  font-family: system-ui, sans-serif;
+}
+.mani-sheet__timeline-empty {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* History drawer */
+.mani-history {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  justify-content: flex-end;
+}
+.mani-history__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 14, 0.65);
+}
+.mani-history__panel {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  height: 100%;
+  overflow: auto;
+  padding: 1.25rem;
+  background: linear-gradient(180deg, #0f243c, #070d16);
+  border-left: 1px solid rgba(242, 210, 122, 0.22);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.45);
+}
+.mani-history__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.mani-history__head h2 {
+  margin: 0;
+  color: #f2d27a;
+  font-size: 1.15rem;
+}
+.mani-history__head p {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+.mani-history__empty {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.9rem;
+}
+.mani-history__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.mani-history__item {
+  display: flex;
+  gap: 0.35rem;
+  align-items: stretch;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+.mani-history__main {
+  flex: 1;
+  text-align: left;
+  padding: 0.75rem 0.85rem;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+}
+.mani-history__main strong {
+  display: block;
+  font-size: 0.9rem;
+}
+.mani-history__main span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+.mani-history__meta {
+  font-size: 0.68rem !important;
+  color: rgba(255, 255, 255, 0.38) !important;
+}
+.mani-history__del {
+  width: 2.25rem;
+  border: 0;
+  background: rgba(255, 80, 80, 0.12);
+  color: #fca5a5;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+  #mani-print-root,
+  #mani-print-root * {
+    visibility: visible !important;
+  }
+
+  .no-print,
+  .mani-export__toolbar,
+  .mani-export__backdrop,
+  .mani-export__error,
+  .mani-export__ok,
+  .mani-history {
+    display: none !important;
+  }
+
+  .mani-export,
+  .mani-export__panel,
+  .mani-export__scroll {
+    position: static !important;
+    inset: auto !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Paper-optimized sheet: white ground, dark ink, light borders */
+  #mani-print-root {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    color: #111 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  #mani-print-root .mani-sheet__glow {
+    display: none !important;
+  }
+  #mani-print-root .mani-sheet__eyebrow {
+    color: #8a6a1a !important;
+  }
+  #mani-print-root .mani-sheet__title {
+    color: #0b1f3a !important;
+  }
+  #mani-print-root .mani-sheet__tagline {
+    color: #444 !important;
+  }
+  #mani-print-root .mani-sheet__logo {
+    filter: none !important;
+  }
+  #mani-print-root .mani-sheet__dates {
+    background: #f4f6f8 !important;
+    border: 1px solid #cfd6de !important;
+  }
+  #mani-print-root .mani-sheet__dates > div span {
+    color: #667788 !important;
+  }
+  #mani-print-root .mani-sheet__dates > div strong {
+    color: #111 !important;
+  }
+  #mani-print-root .mani-sheet__winner {
+    background: #fff8e6 !important;
+    border: 1px solid #d4b45a !important;
+    box-shadow: none !important;
+  }
+  #mani-print-root .mani-sheet__winner span {
+    color: #8a6a1a !important;
+  }
+  #mani-print-root .mani-sheet__winner strong {
+    color: #0b1f3a !important;
+  }
+  #mani-print-root .mani-sheet__site {
+    background: #fff !important;
+    border: 1px solid #cfd6de !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  #mani-print-root .mani-sheet__site-name {
+    color: #0b1f3a !important;
+  }
+  #mani-print-root .mani-sheet__site-loc {
+    color: #555 !important;
+  }
+  #mani-print-root .mani-sheet__site-badge {
+    color: #fff !important;
+  }
+  #mani-print-root .mani-sheet__meters > div {
+    background: #f4f6f8 !important;
+  }
+  #mani-print-root .mani-sheet__meters span {
+    color: #667788 !important;
+  }
+  #mani-print-root .mani-sheet__meters strong {
+    color: #111 !important;
+  }
+  #mani-print-root .mani-sheet__score-row {
+    border-top-color: #cfd6de !important;
+  }
+  #mani-print-root .mani-sheet__score-row span,
+  #mani-print-root .mani-sheet__score-row small {
+    color: #667788 !important;
+  }
+  #mani-print-root .mani-sheet__score-row em {
+    color: #0b1f3a !important;
+  }
+  #mani-print-root .mani-sheet__timelines {
+    background: #fafbfc !important;
+    border: 1px solid #cfd6de !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #mani-print-root .mani-sheet__timelines-head {
+    color: #8a6a1a !important;
+  }
+  #mani-print-root .mani-sheet__timelines-lead {
+    color: #555 !important;
+  }
+  #mani-print-root .mani-sheet__timeline-title {
+    color: #111 !important;
+  }
+  #mani-print-root .mani-sheet__timeline-legend {
+    color: #555 !important;
+  }
+  #mani-print-root .mani-sheet__timeline-grid {
+    stroke: #d8dde3 !important;
+  }
+  #mani-print-root .mani-sheet__timeline-tick,
+  #mani-print-root .mani-sheet__timeline-ylab,
+  #mani-print-root .mani-sheet__timeline-xlab {
+    fill: #667788 !important;
+  }
+  #mani-print-root .mani-sheet__timeline-empty {
+    color: #555 !important;
+  }
+  #mani-print-root .mani-sheet__narrative {
+    background: #fafbfc !important;
+    border: 1px solid #cfd6de !important;
+  }
+  #mani-print-root .mani-sheet__narrative pre {
+    color: #222 !important;
+  }
+  #mani-print-root .mani-sheet__foot {
+    color: #555 !important;
+  }
+  #mani-print-root .mani-sheet__stamp {
+    color: #8a6a1a !important;
+  }
+  #mani-print-root .mani-sheet__annex {
+    border-top: 1px solid #cfd6de !important;
+    break-before: page;
+    page-break-before: always;
+  }
+  #mani-print-root .mani-sheet__annex-title {
+    color: #0b1f3a !important;
+  }
+  #mani-print-root .mani-sheet__annex-lead,
+  #mani-print-root .mani-sheet__annex-caption {
+    color: #555 !important;
+  }
+  #mani-print-root .mani-sheet__annex-coords li {
+    background: #f4f6f8 !important;
+    border: 1px solid #cfd6de !important;
+  }
+  #mani-print-root .mani-sheet__annex-coords strong {
+    color: #0b1f3a !important;
+  }
+  #mani-print-root .mani-sheet__annex-coords span {
+    color: #333 !important;
+  }
+  #mani-print-root .mani-sheet__map {
+    border: 1px solid #cfd6de !important;
+    border-radius: 0 !important;
+    max-height: 220mm;
+    object-fit: contain;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  #mani-print-root .mani-sheet__annex-missing {
+    border-color: #cfd6de !important;
+    color: #555 !important;
+  }
+}

@@ -21,7 +21,7 @@ const enBase: Dict = {
   aboutHowScore:
     "Topographic clearing: we ray-cast a 360° horizon mask on the LRO LOLA polar DEM LDEM_75S_240M (PDS; ~75°S–90°S). Catalog sites use precomputed masks; two map clicks pick arbitrary A/B points (live Horizons + on-the-fly LOLA). A sample counts as clear when Horizons elevation exceeds the mask at that azimuth (curvature d²/2R). The 0–100 score uses topo hours (~45% Sun, ~40% Earth, ~15% mean Sun elevation)—a Nova 3 heuristic. Geometric hours are also shown.",
   mapClickHint:
-    "Two clicks on the globe: first sets point A, second sets point B (or use markers / the lists). Needs network for live Horizons on custom points. LOLA topo mask covers ~75°S–90°S.",
+    "Pick Site A or Site B above, then use the globe, markers, or that site’s list. A single click on the globe assigns a custom point to the active slot. Custom points need network for live Horizons. LOLA topo mask covers ~75°S–90°S.",
   customPoint: "Custom map point",
   comparingLive: "Fetching Horizons + LOLA…",
   aboutRefsTitle: "Official references",
@@ -77,6 +77,19 @@ const enBase: Dict = {
   password: "Password",
   signingIn: "Signing in…",
   loginFailed: "Login failed",
+  forgotPasswordLink: "Forgot your password?",
+  forgotPasswordTitle: "Recover password",
+  forgotPasswordLead: "Enter the email you used to register. We will send a temporary password.",
+  forgotPasswordSubmit: "Send temporary password",
+  forgotPasswordSending: "Sending…",
+  forgotPasswordSuccess: "A temporary password was sent to your email. Check your inbox and sign in.",
+  forgotPasswordDevLogged:
+    "Development mode: SMTP is off; the temporary password was written to the API server log.",
+  forgotUserNotRegistered: "This user is not registered.",
+  forgotSmtpNotConfigured: "Email delivery is not configured on this server. Contact your administrator.",
+  forgotEmailFailed: "Could not send the email. Try again later.",
+  forgotPasswordFailed: "Password recovery failed.",
+  backToLogin: "Back to sign in",
   newHere: "New here?",
   registerTitle: "Create your MANI account",
   registerLead: "Open registration for mission planners and educators worldwide.",
@@ -92,9 +105,19 @@ const enBase: Dict = {
   siteB: "Site B",
   startUtc: "Start (UTC)",
   endUtc: "End (UTC)",
+  utcDatePlaceholder: "Pick date & time…",
+  utcTimeCaption: "Time (UTC)",
   compareSites: "Compare sites",
   comparing: "Comparing…",
   compareFailed: "Compare failed",
+  horizonsOfflineHint:
+    "Offline: embedded Horizons only. Valid UTC range: {start} → {end}. Connect to the Internet for other dates.",
+  horizonsOnlineHint:
+    "Online: any UTC dates are fetched live from JPL Horizons. Embedded cache ({start} → {end}) is used offline.",
+  horizonsNeedInternet:
+    "Connect to the Internet to fetch Horizons data for the requested dates.",
+  windowClampedNotice:
+    "Requested window exceeded embedded Horizons; analysis uses {start} → {end} (UTC).",
   loadingMap: "Loading map…",
   recommendation: "Recommendation:",
   winsForWindow: "wins for this window (LOLA topographic Sun + Earth clear hours).",
@@ -154,6 +177,9 @@ const enBase: Dict = {
   exportPreviewLead:
     "Logo, analysis window, Annex A map with A/B, query and print times — saved to your account history.",
   exportPrint: "Save & print / PDF",
+  exportReprint: "Print / PDF",
+  exportReprintLead: "Choose report language, then print. Numeric data stays from the saved comparison.",
+  exportReportLanguage: "Report language",
   exportSaving: "Saving…",
   exportFailed: "Could not save report",
   exportSaved: "Saved to history ({id})",
@@ -216,7 +242,7 @@ export const TRANSLATIONS: Record<LangCode, Dict> = {
     aboutHowScore:
       "Despeje topográfico: proyectamos una máscara 360° sobre el DEM polar LRO LOLA LDEM_75S_240M (PDS; ~75°S–90°S). Los sitios del catálogo usan máscaras precargadas; dos clics en el mapa eligen puntos A/B arbitrarios (Horizons en vivo + LOLA al vuelo). Una muestra cuenta si la elevación de Horizons supera la máscara en ese azimut (curvatura d²/2R). La puntuación 0–100 usa horas topográficas (~45 % Sol, ~40 % Tierra, ~15 % elevación media): heurística Nova 3. También se muestran horas geométricas.",
     mapClickHint:
-      "Dos clics en el globo: el primero fija el punto A, el segundo el B (o usa marcadores / listas). Los puntos personalizados necesitan red para Horizons en vivo. La máscara LOLA cubre ~75°S–90°S.",
+      "Elige Sitio A o Sitio B arriba; luego usa el globo, marcadores o la lista del sitio activo. Un clic en el globo asigna un punto personalizado a la ranura activa. Los puntos personalizados necesitan red para Horizons en vivo. La máscara LOLA cubre ~75°S–90°S.",
     customPoint: "Punto del mapa",
     comparingLive: "Consultando Horizons + LOLA…",
     aboutRefsTitle: "Referencias oficiales",
@@ -272,6 +298,22 @@ export const TRANSLATIONS: Record<LangCode, Dict> = {
     password: "Contraseña",
     signingIn: "Entrando…",
     loginFailed: "Error al iniciar sesión",
+    forgotPasswordLink: "¿Olvidaste tu contraseña?",
+    forgotPasswordTitle: "Recuperar contraseña",
+    forgotPasswordLead:
+      "Ingresa el correo con el que te registraste. Enviaremos una contraseña temporal.",
+    forgotPasswordSubmit: "Enviar contraseña temporal",
+    forgotPasswordSending: "Enviando…",
+    forgotPasswordSuccess:
+      "Enviamos una contraseña temporal a tu correo. Revisa tu bandeja e inicia sesión.",
+    forgotPasswordDevLogged:
+      "Modo desarrollo: SMTP desactivado; la contraseña temporal se escribió en el log del servidor API.",
+    forgotUserNotRegistered: "Este usuario no está registrado.",
+    forgotSmtpNotConfigured:
+      "El envío de correo no está configurado en este servidor. Contacta al administrador.",
+    forgotEmailFailed: "No se pudo enviar el correo. Intenta de nuevo más tarde.",
+    forgotPasswordFailed: "No se pudo recuperar la contraseña.",
+    backToLogin: "Volver al inicio de sesión",
     newHere: "¿Nuevo aquí?",
     registerTitle: "Crea tu cuenta MANI",
     registerLead: "Registro abierto para planificadores de misión y educadores de todo el mundo.",
@@ -287,9 +329,19 @@ export const TRANSLATIONS: Record<LangCode, Dict> = {
     siteB: "Sitio B",
     startUtc: "Inicio (UTC)",
     endUtc: "Fin (UTC)",
+    utcDatePlaceholder: "Elegir fecha y hora…",
+    utcTimeCaption: "Hora (UTC)",
     compareSites: "Comparar sitios",
     comparing: "Comparando…",
     compareFailed: "Error al comparar",
+    horizonsOfflineHint:
+      "Sin red: solo Horizons embebido. Rango UTC válido: {start} → {end}. Conéctate a Internet para otras fechas.",
+    horizonsOnlineHint:
+      "Con red: cualquier fecha UTC se consulta en vivo en JPL Horizons. La caché embebida ({start} → {end}) sirve sin conexión.",
+    horizonsNeedInternet:
+      "Conéctate a Internet para obtener datos de Horizons para las fechas solicitadas.",
+    windowClampedNotice:
+      "La ventana pedida excedía Horizons embebido; el análisis usa {start} → {end} (UTC).",
     loadingMap: "Cargando mapa…",
     recommendation: "Recomendación:",
     winsForWindow: "gana en esta ventana (horas de Sol y Tierra despejadas del relieve LOLA).",
@@ -349,6 +401,10 @@ export const TRANSLATIONS: Record<LangCode, Dict> = {
     exportPreviewLead:
       "Logo, ventana de análisis, Anexo A con mapa A/B, hora de consulta e impresión — se guarda en el historial de tu cuenta.",
     exportPrint: "Guardar e imprimir / PDF",
+    exportReprint: "Imprimir / PDF",
+    exportReprintLead:
+      "Elige el idioma del informe e imprime. Los datos numéricos son los de la comparación guardada.",
+    exportReportLanguage: "Idioma del informe",
     exportSaving: "Guardando…",
     exportFailed: "No se pudo guardar el informe",
     exportSaved: "Guardado en historial ({id})",

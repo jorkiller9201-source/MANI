@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <I18nProvider>{children}</I18nProvider>
+        <div id="mani-datepicker-portal" />
       </body>
     </html>
   );

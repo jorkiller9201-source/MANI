@@ -504,6 +504,112 @@ def main():
         resultado="El flujo principal de MANI muestra la evolución diaria sin abrir el informe.",
     )
 
+    entry_table(
+        doc,
+        "22:25",
+        "Compare sin resultados fuera de Horizons",
+        [
+            "La ventana pedida (p. ej. diciembre 2026–noviembre 2027) no coincidía con el cache embebido (15–29 nov 2026) y /compare devolvía cero muestras sin aviso.",
+            "El backend recorta la ventana al rango Horizons offline de sitios curados o devuelve error bilingüe con el Desde–Hasta válido.",
+            "En la UI se muestra el rango embebido y un aviso si la ventana se ajusta automáticamente.",
+        ],
+        resultado="Shackleton vs Malapert con fechas dentro de nov 2026 entrega horas, puntuación y líneas de tiempo sin depender de internet.",
+    )
+
+    entry_table(
+        doc,
+        "22:32",
+        "Horizons en vivo con internet",
+        [
+            "Con red, /compare pide JPL Horizons para cualquier ventana (p. ej. 15–20 dic 2026); sin red, solo la caché embebida o error bilingüe pidiendo conexión.",
+            "La caché de catálogo se usa solo si cubre por completo las fechas pedidas; ya no se fuerza noviembre 2026 cuando hay internet.",
+            "La UI distingue hint offline vs online y muestra el mensaje de conexión de forma visible.",
+        ],
+        resultado="Demo offline intacta en nov 2026; con internet el equipo ya no queda limitado al JSON embebido.",
+    )
+
+    entry_table(
+        doc,
+        "22:52",
+        "Agregar sitio (coordenadas A/B)",
+        [
+            "Panel «Agregar sitio» en la barra lateral, debajo de Ir a sitio A/B: entradas lat/lon y botón para usar el último clic en el globo.",
+            "El nombre mostrado del punto personalizado es la coordenada con cuatro decimales (p. ej. −89.5000°, 12.3000°) en selector, compare, informe y marcador.",
+        ],
+        resultado="Se puede comparar un sitio curado contra coordenadas arbitrarias sin romper Horizons en vivo ni el flujo de clic en el mapa.",
+    )
+
+    entry_table(
+        doc,
+        "23:10",
+        "Clic simple en el globo (ranura A/B)",
+        [
+            "El clic en superficie esperaba 280 ms y un segundo toque en esa ventana cancelaba la asignación y solo precargaba «Agregar sitio».",
+            "Clic simple actualiza de inmediato la ranura activa; doble clic sigue rellenando lat/lon en el panel.",
+            "Respaldo pickEllipsoid si el rayo no intersecta el terreno; pickTarget estable con ref en la página.",
+        ],
+        resultado="Un solo clic en la Luna mueve el pin A o B al instante sin depender del debounce.",
+    )
+
+    entry_table(
+        doc,
+        "23:25",
+        "Globo lunar estable en Cesium",
+        [
+            "A veces la Luna desaparecía del mapa: el zoom con rueda podía alejar la cámara cientos de megámetros y el disco quedaba fuera de escena.",
+            "Se limita el zoom máximo al mismo rango que la órbita manual y se reajusta la cámara en cada cuadro si se sale de banda.",
+            "Recuperación ante error de render y contexto WebGL: globo e imágenes visibles, Sol nativo apagado, resize del contenedor.",
+        ],
+        resultado="El globo lunar se mantiene visible al navegar, hacer zoom y recuperarse de fallos puntuales del visor.",
+    )
+
+    entry_table(
+        doc,
+        "23:53",
+        "Reimprimir informes en otro idioma",
+        [
+            "En «Mis informes», al reabrir un export guardado aparece el selector «Idioma del informe» (mismos idiomas de la app).",
+            "La vista previa y el PDF usan textos i18n del idioma elegido; los números siguen siendo los de la comparación guardada.",
+            "El botón pasa a «Imprimir / PDF» sin duplicar entradas en el historial.",
+        ],
+        resultado="El equipo puede reimprimir un informe en inglés o español (u otro idioma) sin volver a comparar sitios.",
+    )
+
+    entry_table(
+        doc,
+        "23:57",
+        "Anexo A: imagen del globo en el informe",
+        [
+            "El Anexo A mostraba un rectángulo negro con solo las etiquetas A/B: al copiar el canvas WebGL de Cesium el búfer ya estaba borrado.",
+            "Se activa preserveDrawingBuffer en el visor, se esperan teselas y cuadros postRender, y se reintenta si el recorte sale vacío.",
+            "Desde historial: si la imagen guardada está en negro, se vuelve a capturar del mapa vivo; el idioma del informe ya no fuerza una nueva captura.",
+        ],
+        resultado="La vista previa y el PDF muestran el globo Moon Trek con los puntos A y B enmarcados.",
+    )
+
+    entry_table(
+        doc,
+        "00:20",
+        "Recuperación de contraseña",
+        [
+            "En login: enlace «¿Olvidaste tu contraseña?» hacia formulario de correo (ES/EN).",
+            "API POST /auth/forgot-password con límite 3/min; correo no registrado devuelve mensaje claro.",
+            "Si el usuario existe: contraseña temporal por bcrypt, envío SMTP o log en desarrollo sin SMTP.",
+        ],
+        resultado="Planners pueden restablecer acceso sin soporte manual cuando el correo y SMTP están listos.",
+    )
+
+    entry_table(
+        doc,
+        "00:05",
+        "Anexo A fijo en Mis informes",
+        [
+            "Al guardar el informe se valida el JPEG del globo y se persiste en el historial; al reimprimir o cambiar idioma solo se reutiliza esa imagen.",
+            "Informes viejos sin foto o en negro: un solo intento de captura con el mapa vivo, actualización del registro y mensaje claro si el globo no está abierto.",
+        ],
+        resultado="El Anexo A no depende del idioma y deja de verse en negro en informes ya guardados.",
+    )
+
     heading(doc, "Pendiente del resto del sábado")
     bullet(doc, "Ensayo de la demo y guion del video (André).")
     bullet(doc, "Prueba de acceso Oracle :9543 cuando el puente esté disponible.")

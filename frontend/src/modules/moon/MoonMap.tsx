@@ -7,13 +7,15 @@ import { useI18n } from "@/i18n/I18nProvider";
 import {
   celestialInMoonFrame,
   disableNativeCesiumSun,
-  ensureSpaceFarPlane,
+  ensureMoonSceneFarPlane,
   guardCesiumSunRenderErrors,
   julianFromIso,
-  SPACE_FAR_PLANE_M,
+  MOON_SCENE_FAR_M,
+  safeViewerResize,
   type CelestialPose,
 } from "./celestial";
 import { SOUTH_POLE_NOMENCLATURE } from "./nomenclature";
+import UtcDateTimePicker from "@/components/UtcDateTimePicker";
 
 export type CustomPoint = { lat: number; lon: number; name?: string };
 
@@ -34,7 +36,7 @@ type Props = {
   customA?: CustomPoint | null;
   customB?: CustomPoint | null;
   onSelect: (siteId: string) => void;
-  /** Click empty lunar surface → arbitrary point for current A/B slot */
+  /** Single-click empty surface → active A/B slot */
   onPickPoint?: (lat: number, lon: number) => void;
   offline?: boolean;
   focusSiteId?: string | null;
@@ -394,6 +396,8 @@ function projectCartesian(viewer: any, Cesium: any, world: any) {
 function projectOnCanvas(viewer: any, Cesium: any, lon: number, lat: number, height: number) {
   const ellipsoid = moonEllipsoidOf(Cesium);
   const world = Cesium.Cartesian3.fromDegrees(lon, lat, height, ellipsoid);
+  const occluder = new Cesium.EllipsoidalOccluder(ellipsoid, viewer.camera.positionWC);
+  if (!occluder.isPointVisible(world)) return null;
   const canvasPos =
     viewer.scene.cartesianToCanvasCoordinates?.(world) ||
     Cesium.SceneTransforms?.worldToWindowCoordinates?.(viewer.scene, world);
@@ -617,7 +621,7 @@ export default function MoonMap({
           // Far plane is ~1.6 AU so the Sun is not clipped. That ratio breaks
           // order-independent translucency and drops every billboard/label.
           orderIndependentTranslucency: false,
-          contextOptions: { webgl: { alpha: false } },
+          contextOptions: { webgl: { alpha: false, preserveDrawingBuffer: true } },
         });
 
         if (destroyed) {
@@ -638,19 +642,17 @@ export default function MoonMap({
         if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = false;
         if (viewer.scene.skyBox) viewer.scene.skyBox.show = true;
         // Native Cesium.Sun burst shader breaks on some GPUs — flare is a billboard / screen disc.
-        guardCesiumSunRenderErrors(viewer);
+        guardCesiumSunRenderErrors(viewer, Cesium);
         if (viewer.scene.moon) viewer.scene.moon.show = false;
         // Far plane past 1 AU; wider FOV keeps the near-horizon Sun in frame at the pole
         if (viewer.camera?.frustum) {
           viewer.camera.frustum.near = 1.0;
-          viewer.camera.frustum.far = SPACE_FAR_PLANE_M;
+          viewer.camera.frustum.far = MOON_SCENE_FAR_M;
           if (typeof viewer.camera.frustum.fov === "number") {
             viewer.camera.frustum.fov = Cesium.Math.toRadians(75);
           }
         }
-        viewer.scene.preRender.addEventListener(() => {
-          if ((viewer as any).__maniCelestialPose) ensureSpaceFarPlane(viewer);
-        });
+        ensureMoonSceneFarPlane(viewer);
         viewer.imageryLayers.removeAll();
 
         // Earth is a screen-facing billboard at the real Moon-fixed position.
@@ -737,8 +739,11 @@ export default function MoonMap({
         ssc.inertiaTranslate = 0;
         ssc.inertiaZoom = 0;
         ssc.minimumZoomDistance = 40_000; // ~40 km above surface
-        ssc.maximumZoomDistance = 800_000_000; // past Earth; Sun stays at 1 AU (not a zoom target)
+        // Match dollyZoom/orbitMoon clamp — wheel zoom to hundreds of Mm made the Moon vanish.
+        ssc.maximumZoomDistance = moonEllipsoid.maximumRadius * 14;
         ssc.zoomFactor = 2.0;
+        // Globe clicks pick A/B — disable Cesium default double-click zoom.
+        ssc.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
 
         const markUserCamera = () => {
           // Keep free camera: any mouse orbit must not revive a lookAt lock.
@@ -752,7 +757,7 @@ export default function MoonMap({
         let initialFramed = false;
         const frameFullMoon = () => {
           if (destroyed || !viewerRef.current) return;
-          viewer.resize();
+          safeViewerResize(viewer, containerRef.current);
           // Only the first paint may set the home pose — never again (mouse/zoom must stick).
           if (!initialFramed && !viewer.__maniUserFlew) {
             frameSouthPoleHome(viewer, Cesium);
@@ -763,11 +768,19 @@ export default function MoonMap({
 
         const onResize = () => {
           if (destroyed || !viewerRef.current) return;
-          viewer.resize();
+          const el = containerRef.current;
+          safeViewerResize(viewer, el);
           viewer.scene.requestRender();
         };
         window.addEventListener("resize", onResize);
         (viewer as any).__maniOnResize = onResize;
+
+        let resizeObs: ResizeObserver | undefined;
+        if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+          resizeObs = new ResizeObserver(() => onResize());
+          resizeObs.observe(containerRef.current);
+          (viewer as any).__maniResizeObs = resizeObs;
+        }
 
         requestAnimationFrame(() => {
           try {
@@ -775,7 +788,7 @@ export default function MoonMap({
             // Resize only after layout — do NOT re-apply south-pole home (that killed mouse zoom).
             setTimeout(() => {
               if (destroyed || !viewerRef.current) return;
-              viewer.resize();
+              safeViewerResize(viewer, containerRef.current);
               viewer.scene.requestRender();
             }, 350);
           } catch (e) {
@@ -784,23 +797,47 @@ export default function MoonMap({
         });
 
         const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+        const surfaceLatLonFromClick = (position: any): { lat: number; lon: number } | null => {
+          const ray = viewer.camera.getPickRay(position);
+          let cartesian: any = null;
+          if (ray) {
+            cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+          }
+          if (!Cesium.defined(cartesian)) {
+            cartesian = viewer.camera.pickEllipsoid(position, moonEllipsoid);
+          }
+          if (!Cesium.defined(cartesian)) return null;
+          const carto = moonEllipsoid.cartesianToCartographic(cartesian);
+          return {
+            lat: Cesium.Math.toDegrees(carto.latitude),
+            lon: Cesium.Math.toDegrees(carto.longitude),
+          };
+        };
+
+        const resolveSiteIdFromPick = (picked: any): string | null => {
+          if (!Cesium.defined(picked) || !picked.id) return null;
+          const ent = picked.id;
+          if (typeof ent === "string") {
+            return sitesRef.current.some((s) => s.id === ent) ? ent : null;
+          }
+          if (ent.siteId) return ent.siteId;
+          const entId = ent.id;
+          if (typeof entId === "string" && sitesRef.current.some((s) => s.id === entId)) return entId;
+          return null;
+        };
+
         handler.setInputAction((click: any) => {
           markUserCamera();
           const picked = viewer.scene.pick(click.position);
-          if (Cesium.defined(picked) && picked.id && picked.id.siteId) {
-            onSelectRef.current(picked.id.siteId);
+          const siteId = resolveSiteIdFromPick(picked);
+          if (siteId) {
+            onSelectRef.current(siteId);
             return;
           }
-          // Two-click workflow: empty surface → arbitrary lat/lon for A then B
-          if (!onPickPointRef.current) return;
-          const ray = viewer.camera.getPickRay(click.position);
-          if (!ray) return;
-          const cartesian = viewer.scene.globe.pick(ray, viewer.scene);
-          if (!Cesium.defined(cartesian)) return;
-          const carto = moonEllipsoid.cartesianToCartographic(cartesian);
-          const lat = Cesium.Math.toDegrees(carto.latitude);
-          const lon = Cesium.Math.toDegrees(carto.longitude);
-          onPickPointRef.current(lat, lon);
+          const latLon = surfaceLatLonFromClick(click.position);
+          if (!latLon) return;
+          onPickPointRef.current?.(latLon.lat, latLon.lon);
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
         handler.setInputAction(() => markUserCamera(), Cesium.ScreenSpaceEventType.LEFT_DOWN);
         handler.setInputAction(() => markUserCamera(), Cesium.ScreenSpaceEventType.MIDDLE_DOWN);
@@ -808,8 +845,6 @@ export default function MoonMap({
         handler.setInputAction(() => markUserCamera(), Cesium.ScreenSpaceEventType.WHEEL);
         handler.setInputAction(() => markUserCamera(), Cesium.ScreenSpaceEventType.PINCH_START);
         (viewer as any).__maniNavHandler = handler;
-
-        const depthOff = Number.POSITIVE_INFINITY;
 
         sitesRef.current.forEach((s) => {
           const isA = s.id === siteARef.current;
@@ -824,7 +859,7 @@ export default function MoonMap({
               image: isA ? PIN_A : isB ? PIN_B : PIN_OTHER,
               verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
               horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-              disableDepthTestDistance: depthOff,
+              disableDepthTestDistance: 0,
               scale: isA || isB ? 1.1 : 0.85,
               scaleByDistance: new Cesium.NearFarScalar(2.0e4, 1.3, 5.0e6, 0.5),
             },
@@ -845,6 +880,13 @@ export default function MoonMap({
       destroyed = true;
       const v = viewerRef.current;
       if (v?.__maniOnResize) window.removeEventListener("resize", v.__maniOnResize);
+      if (v?.__maniResizeObs) {
+        try {
+          v.__maniResizeObs.disconnect();
+        } catch {
+          /* ignore */
+        }
+      }
       if (v?.__maniMarkUserCamera) {
         try {
           v.camera.moveStart.removeEventListener(v.__maniMarkUserCamera);
@@ -877,6 +919,7 @@ export default function MoonMap({
       const isB = !customB && s.id === siteB;
       pin.billboard.image = isA ? PIN_A : isB ? PIN_B : PIN_OTHER;
       pin.billboard.scale = isA || isB ? 1.1 : 0.85;
+      pin.billboard.disableDepthTestDistance = 0;
     });
 
     const upsertCustom = (id: string, pt: CustomPoint | null | undefined, pinImg: string, label: string) => {
@@ -891,6 +934,7 @@ export default function MoonMap({
         if (existing.billboard) {
           existing.billboard.image = pinImg;
           existing.billboard.scale = 1.15;
+          existing.billboard.disableDepthTestDistance = 0;
         }
         return;
       }
@@ -903,7 +947,7 @@ export default function MoonMap({
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           heightReference: Cesium.HeightReference.NONE,
           scale: 1.15,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          disableDepthTestDistance: 0,
         },
       });
     };
@@ -912,7 +956,7 @@ export default function MoonMap({
     viewer.scene.requestRender();
   }, [siteA, siteB, sites, customA, customB]);
 
-  // HUD names drawn ABOVE the Cesium canvas (never under the globe depth buffer).
+  // HUD site/crater names above the canvas; occluded on far side via EllipsoidalOccluder.
   useEffect(() => {
     showNamesRef.current = showNames;
     showCratersRef.current = showCraters;
@@ -1001,7 +1045,9 @@ export default function MoonMap({
     viewer.scene.postRender.addEventListener(onPostRender);
     update();
     return () => {
-      viewer.scene.postRender.removeEventListener(onPostRender);
+      if (viewer && !viewer.isDestroyed?.() && viewer.scene) {
+        viewer.scene.postRender.removeEventListener(onPostRender);
+      }
       if (raf) cancelAnimationFrame(raf);
     };
   }, [showNames, showCraters, phase, sites, siteA, siteB, customA, customB]);
@@ -1080,7 +1126,9 @@ export default function MoonMap({
     viewer.scene.postRender.addEventListener(onPost);
     update();
     return () => {
-      viewer.scene.postRender.removeEventListener(onPost);
+      if (viewer && !viewer.isDestroyed?.() && viewer.scene) {
+        viewer.scene.postRender.removeEventListener(onPost);
+      }
       if (raf) cancelAnimationFrame(raf);
     };
   }, [phase, showSky]);
@@ -1259,7 +1307,7 @@ export default function MoonMap({
       intensity: 2.0,
     });
 
-    ensureSpaceFarPlane(viewer);
+    ensureMoonSceneFarPlane(viewer);
     viewer.scene.requestRender();
   }, [showSky, skyTime, sky, phase, t]);
 
@@ -1520,15 +1568,11 @@ export default function MoonMap({
           }}
         >
           <div className="mb-1 font-semibold text-[#f2d27a]">{t("skyEpoch")}</div>
-          <input
-            type="datetime-local"
-            className="w-full rounded border border-white/20 bg-black/60 px-2 py-1 text-[11px] text-white"
-            value={(skyTime || "2026-11-15T00:00:00Z").slice(0, 16)}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (!v) return;
-              onSkyTimeChange?.(`${v}:00Z`);
-            }}
+          <UtcDateTimePicker
+            compact
+            timeIntervals={15}
+            value={skyTime || "2026-11-15T00:00:00Z"}
+            onChange={(iso) => onSkyTimeChange?.(iso)}
           />
           {compareStart && onSkyTimeChange && (
             <button

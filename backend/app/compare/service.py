@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
-from app.compare.horizons_live import load_series_for_point
+from app.core.config import settings
+
+from app.compare.horizons_live import (
+    OFFLINE_NEED_INTERNET,
+    curated_catalog_intersection,
+    embedded_series_for_point,
+    horizons_live_available,
+    load_series_for_point,
+)
 from app.compare.lola_mask import horizon_payload_for_point
 from app.sites.catalog import get_site
 
@@ -162,6 +170,68 @@ def score_site(sun: dict[str, Any], earth: dict[str, Any], *, use_topo: bool = T
     return round(100.0 * (0.45 * sun_n + 0.40 * earth_n + elev_bonus), 1)
 
 
+def _to_iso_z(dt: datetime) -> str:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _resolve_compare_window(
+    a: dict[str, Any],
+    b: dict[str, Any],
+    start: datetime,
+    end: datetime,
+    start_iso: str,
+    end_iso: str,
+) -> tuple[datetime, datetime, str, str, dict[str, Any], bool]:
+    window: dict[str, Any] = {
+        "requested_start": start_iso,
+        "requested_end": end_iso,
+        "clamped": False,
+        "offline_catalog": False,
+        "live_horizons": False,
+    }
+    cache_span = curated_catalog_intersection([a, b])
+    if cache_span is not None:
+        cache_lo, cache_hi = cache_span
+        window["horizons_cache_start"] = _to_iso_z(cache_lo)
+        window["horizons_cache_end"] = _to_iso_z(cache_hi)
+
+    span_days = (end - start).total_seconds() / 86400.0
+    if span_days > settings.horizons_max_compare_days:
+        raise ValueError(
+            f"UTC window exceeds {settings.horizons_max_compare_days} days. "
+            f"Shorten the range. / La ventana UTC supera {settings.horizons_max_compare_days} días. "
+            "Acorta el rango."
+        )
+
+    live_ok = horizons_live_available()
+    window["live_horizons"] = live_ok
+
+    if live_ok:
+        offline_only = False
+    else:
+        offline_only = True
+        window["offline_catalog"] = True
+        for site in (a, b):
+            sid = None if site.get("custom") else site["id"]
+            if embedded_series_for_point(
+                float(site["lat"]),
+                float(site["lon"]),
+                float(site.get("elev_km") or 0.0),
+                start_iso,
+                end_iso,
+                site_id=sid,
+            ) is None:
+                raise ValueError(OFFLINE_NEED_INTERNET)
+
+    eff_start_iso = _to_iso_z(start)
+    eff_end_iso = _to_iso_z(end)
+    window["start"] = eff_start_iso
+    window["end"] = eff_end_iso
+    return start, end, eff_start_iso, eff_end_iso, window, offline_only
+
+
 def resolve_point(
     *,
     site_id: str | None,
@@ -173,7 +243,7 @@ def resolve_point(
     if lat is not None and lon is not None:
         if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
             raise ValueError("lat/lon out of range")
-        label = name or f"Custom ({lat:.3f}°, {lon:.3f}°)"
+        label = name or f"{lat:.4f}°, {lon:.4f}°"
         return {
             "id": f"custom_{lat:.4f}_{lon:.4f}",
             "name": label,
@@ -219,7 +289,15 @@ def _location_block(site: dict[str, Any], series: dict[str, Any]) -> dict[str, A
     }
 
 
-def _build_block(site: dict[str, Any], start: datetime, end: datetime, start_iso: str, end_iso: str) -> dict[str, Any]:
+def _build_block(
+    site: dict[str, Any],
+    start: datetime,
+    end: datetime,
+    start_iso: str,
+    end_iso: str,
+    *,
+    offline_only: bool,
+) -> dict[str, Any]:
     series = load_series_for_point(
         float(site["lat"]),
         float(site["lon"]),
@@ -228,6 +306,7 @@ def _build_block(site: dict[str, Any], start: datetime, end: datetime, start_iso
         end_iso,
         site_id=None if site.get("custom") else site["id"],
         site=site,
+        offline_only=offline_only,
     )
     lola = horizon_payload_for_point(
         float(site["lat"]),
@@ -298,18 +377,30 @@ def compare_sites(
     if end <= start:
         raise ValueError("end must be after start")
 
-    left = _build_block(a, start, end, start_iso, end_iso)
-    right = _build_block(b, start, end, start_iso, end_iso)
+    eff_start, eff_end, eff_start_iso, eff_end_iso, window, offline_only = _resolve_compare_window(
+        a, b, start, end, start_iso, end_iso
+    )
+
+    left = _build_block(a, eff_start, eff_end, eff_start_iso, eff_end_iso, offline_only=offline_only)
+    right = _build_block(b, eff_start, eff_end, eff_start_iso, eff_end_iso, offline_only=offline_only)
+
+    if left["sun"]["samples"] == 0 or right["sun"]["samples"] == 0:
+        if window.get("live_horizons"):
+            raise ValueError(
+                "No ephemeris samples in the selected UTC window (Horizons returned empty). / "
+                "No hay muestras de efemérides en la ventana UTC seleccionada (Horizons vacío)."
+            )
+        raise ValueError(OFFLINE_NEED_INTERNET)
     winner_id = left["site"]["id"] if left["score"] >= right["score"] else right["site"]["id"]
     winner_name = left["site"]["name"] if winner_id == left["site"]["id"] else right["site"]["name"]
 
-    report_en = _report_en(left, right, winner_name, start_iso, end_iso)
+    report_en = _report_en(left, right, winner_name, eff_start_iso, eff_end_iso)
     return {
         "a": left,
         "b": right,
         "winner_id": winner_id,
         "winner_name": winner_name,
-        "window": {"start": start_iso, "end": end_iso},
+        "window": window,
         "geo_cross": {
             "a": left["location"],
             "b": right["location"],

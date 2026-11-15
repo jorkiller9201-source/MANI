@@ -1,0 +1,31 @@
+# MANI public HTTPS on Oracle VM — port 9543 (do not reuse 443/8443/9443)
+# Reverse-proxy to Windows LAN via WireGuard/SSH tunnel, or to local processes on the VM.
+
+{
+	auto_https disable_redirects
+}
+
+:9543 {
+	encode gzip
+
+	# Frontend (Next.js MANI)
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy 127.0.0.1:8100
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:3100
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	log {
+		output stdout
+	}
+}

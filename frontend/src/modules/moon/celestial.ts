@@ -90,15 +90,35 @@ export function celestialInMoonFrame(Cesium: any, date: any): CelestialPose | nu
   }
 }
 
+const MOON_RADIUS_M = 1_737_400;
+const CAM_DIST_MIN_SCALE = 1.05;
+const CAM_DIST_MAX_SCALE = 14;
+
 /** ~1 AU — Cesium.Sun bounding volume lives here; frustum.far must exceed this. */
 export const SUN_DISTANCE_M = 149_597_870_700;
 /** Beyond 1 AU so the native Sun is never far-plane culled while orbiting. */
 export const SPACE_FAR_PLANE_M = SUN_DISTANCE_M * 1.6;
+/** Far plane for the Moon scene (DOM Sol/Tierra). Do not use 1 AU — it breaks log-depth frustum splits. */
+export const MOON_SCENE_FAR_M = MOON_RADIUS_M * CAM_DIST_MAX_SCALE * 2.5;
 
 export function ensureSpaceFarPlane(viewer: any) {
   const frustum = viewer?.camera?.frustum;
   if (frustum && typeof frustum.far === "number" && frustum.far < SPACE_FAR_PLANE_M) {
     frustum.far = SPACE_FAR_PLANE_M;
+  }
+}
+
+/** Keeps frustum.far in a safe band for globe + SkyBox (Sun/Earth are HUD, not at 1 AU). */
+export function ensureMoonSceneFarPlane(viewer: any) {
+  const frustum = viewer?.camera?.frustum;
+  if (!frustum || typeof frustum.far !== "number") return;
+  if (!Number.isFinite(frustum.far) || frustum.far > MOON_SCENE_FAR_M * 2) {
+    frustum.far = MOON_SCENE_FAR_M;
+  } else if (frustum.far < MOON_SCENE_FAR_M * 0.5) {
+    frustum.far = MOON_SCENE_FAR_M;
+  }
+  if (typeof frustum.near === "number" && (!Number.isFinite(frustum.near) || frustum.near <= 0)) {
+    frustum.near = 1.0;
   }
 }
 
@@ -112,17 +132,160 @@ export function disableNativeCesiumSun(viewer: any) {
   if (typeof sun.glowFactor === "number") sun.glowFactor = 0;
 }
 
+function moonEllipsoid(Cesium: any) {
+  return Cesium.Ellipsoid.MOON || new Cesium.Ellipsoid(MOON_RADIUS_M, MOON_RADIUS_M, MOON_RADIUS_M);
+}
+
+/** Keep the camera in a sane band around the Moon (wheel zoom was reaching 800 Mm). */
+export function clampMoonCamera(viewer: any, Cesium: any) {
+  if (!viewer?.camera || !Cesium) return false;
+  const center = Cesium.Cartesian3.ZERO;
+  const radius = moonEllipsoid(Cesium).maximumRadius;
+  const minDist = radius * CAM_DIST_MIN_SCALE;
+  const maxDist = radius * CAM_DIST_MAX_SCALE;
+  const pos = viewer.camera.positionWC;
+  if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y) || !Number.isFinite(pos.z)) {
+    recoverMoonCameraHome(viewer, Cesium);
+    return true;
+  }
+  const dist = Cesium.Cartesian3.distance(pos, center);
+  if (!Number.isFinite(dist) || dist < minDist) {
+    recoverMoonCameraHome(viewer, Cesium);
+    return true;
+  }
+  if (dist <= maxDist) return false;
+  const offset = Cesium.Cartesian3.subtract(pos, center, new Cesium.Cartesian3());
+  const offsetMag = Cesium.Cartesian3.magnitude(offset);
+  if (!Number.isFinite(offsetMag) || offsetMag < minDist * 0.25) {
+    recoverMoonCameraHome(viewer, Cesium);
+    return true;
+  }
+  const outward = Cesium.Cartesian3.normalize(offset, new Cesium.Cartesian3());
+  if (!Number.isFinite(outward.x)) {
+    recoverMoonCameraHome(viewer, Cesium);
+    return true;
+  }
+  const clamped = Cesium.Math.clamp(dist, minDist, maxDist);
+  const newPos = Cesium.Cartesian3.multiplyByScalar(outward, clamped, new Cesium.Cartesian3());
+  const direction = Cesium.Cartesian3.negate(outward, new Cesium.Cartesian3());
+  let up = viewer.camera.upWC;
+  if (!up || !Number.isFinite(up.x) || Math.abs(Cesium.Cartesian3.dot(direction, up)) > 0.98) {
+    up = Cesium.Cartesian3.UNIT_Z;
+  }
+  viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  viewer.camera.setView({
+    destination: newPos,
+    orientation: { direction, up },
+  });
+  return true;
+}
+
+export function recoverMoonCameraHome(viewer: any, Cesium: any) {
+  const ellipsoid = moonEllipsoid(Cesium);
+  viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(0.0, -90.0, 500_000.0, ellipsoid),
+    orientation: {
+      heading: 0.0,
+      pitch: Cesium.Math.toRadians(-90.0),
+      roll: 0.0,
+    },
+  });
+}
+
+/** Globe + imagery stay visible after tile failures or render glitches. */
+export function ensureMoonGlobeVisible(viewer: any) {
+  const globe = viewer?.scene?.globe;
+  if (!globe) return;
+  globe.show = true;
+  const layers = viewer.imageryLayers;
+  if (!layers) return;
+  const len = layers.length;
+  for (let i = 0; i < len; i++) {
+    const layer = layers.get(i);
+    if (layer && layer.alpha > 0.01) layer.show = true;
+  }
+}
+
+export function dismissCesiumErrorPanel(viewer: any) {
+  const widget = viewer?.cesiumWidget;
+  const host = widget?._element ?? viewer?.container;
+  const panel = host?.querySelector?.(".cesium-widget-errorPanel");
+  if (panel?.parentElement) panel.parentElement.removeChild(panel);
+  if (widget && widget._useDefaultRenderLoop !== true) widget._useDefaultRenderLoop = true;
+  if (viewer?.scene?.skyBox) viewer.scene.skyBox.show = true;
+}
+
+export function safeViewerResize(viewer: any, container?: HTMLElement | null) {
+  if (!viewer) return;
+  const el = container ?? viewer.container;
+  const w = el?.clientWidth ?? viewer.scene?.canvas?.clientWidth ?? 0;
+  const h = el?.clientHeight ?? viewer.scene?.canvas?.clientHeight ?? 0;
+  if (w < 2 || h < 2) return;
+  try {
+    viewer.resize();
+  } catch {
+    /* ignore */
+  }
+}
+
+function moonGlobeSoftRecover(viewer: any, Cesium: any) {
+  dismissCesiumErrorPanel(viewer);
+  disableNativeCesiumSun(viewer);
+  ensureMoonGlobeVisible(viewer);
+  ensureMoonSceneFarPlane(viewer);
+  recoverMoonCameraHome(viewer, Cesium);
+  safeViewerResize(viewer);
+  if (viewer?.scene?.skyBox) viewer.scene.skyBox.show = true;
+  viewer.scene.requestRender();
+}
+
 /**
  * Proactive off + soft recovery if a Sun draw still throws (e.g. shader compile).
+ * Also keeps the lunar globe on-screen: camera clamp, globe/imagery, WebGL restore.
  */
-export function guardCesiumSunRenderErrors(viewer: any) {
+export function guardCesiumSunRenderErrors(viewer: any, Cesium?: any) {
   if (!viewer?.scene || viewer.__maniSunCrashGuard) return;
   viewer.__maniSunCrashGuard = true;
   disableNativeCesiumSun(viewer);
-  viewer.scene.renderError.addEventListener(() => {
-    disableNativeCesiumSun(viewer);
-    viewer.scene.requestRender();
-  });
+
+  const recover = () => {
+    if (Cesium) moonGlobeSoftRecover(viewer, Cesium);
+    else {
+      disableNativeCesiumSun(viewer);
+      ensureMoonGlobeVisible(viewer);
+      viewer.scene.requestRender();
+    }
+  };
+
+  viewer.scene.renderError.addEventListener(recover);
+
+  if (Cesium) {
+    viewer.scene.preRender.addEventListener(() => {
+      ensureMoonSceneFarPlane(viewer);
+      ensureMoonGlobeVisible(viewer);
+      clampMoonCamera(viewer, Cesium);
+    });
+
+    const canvas = viewer.scene.canvas;
+    if (canvas && !viewer.__maniWebglContextGuard) {
+      viewer.__maniWebglContextGuard = true;
+      canvas.addEventListener(
+        "webglcontextlost",
+        (e: Event) => {
+          e.preventDefault();
+        },
+        false
+      );
+      canvas.addEventListener(
+        "webglcontextrestored",
+        () => {
+          recover();
+        },
+        false
+      );
+    }
+  }
 }
 
 /**

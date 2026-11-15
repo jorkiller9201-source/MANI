@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   authApi,
@@ -20,9 +20,14 @@ import ReportExport from "@/modules/report/ReportExport";
 import ReportHistory from "@/modules/report/ReportHistory";
 import ReportDailyTimeline from "@/modules/report/ReportDailyTimeline";
 import { resolveDailyTimeline } from "@/modules/report/dailyTimeline";
+import UtcDateTimePicker from "@/components/UtcDateTimePicker";
 
 function fmtCoord(n: number, digits = 4) {
   return Number.isFinite(n) ? n.toFixed(digits) : "—";
+}
+
+function customSiteName(lat: number, lon: number) {
+  return `${fmtCoord(lat)}°, ${fmtCoord(lon)}°`;
 }
 
 const MoonMap = dynamic(() => import("@/modules/moon/MoonMap"), { ssr: false });
@@ -138,6 +143,8 @@ export default function AppPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [pickTarget, setPickTarget] = useState<"a" | "b">("a");
+  const pickTargetRef = useRef(pickTarget);
+  pickTargetRef.current = pickTarget;
   const [focusSiteId, setFocusSiteId] = useState<string | null>(null);
   const [focusLatLon, setFocusLatLon] = useState<{ lat: number; lon: number } | null>(null);
   const [focusNonce, setFocusNonce] = useState(0);
@@ -146,7 +153,10 @@ export default function AppPage() {
   const [queriedAt, setQueriedAt] = useState<string>("");
   const [exportOpen, setExportOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-
+  const [horizonsWindow, setHorizonsWindow] = useState<{ start: string; end: string } | null>(
+    null
+  );
+  const [windowNotice, setWindowNotice] = useState("");
   const reportText = useMemo(
     () => (result ? buildLocalizedReport(lang, result) : ""),
     [result, lang]
@@ -177,34 +187,46 @@ export default function AppPage() {
       .catch(() => {
         router.replace("/login");
       });
-    dataApi.sites().then((r) => setSites(r.sites)).catch((e) => setError(e.message));
+    dataApi
+      .sites()
+      .then((r) => {
+        setSites(r.sites);
+        if (r.horizons_window) setHorizonsWindow(r.horizons_window);
+      })
+      .catch((e) => setError(e.message));
   }, [mounted, router]);
 
   function onMapSelect(id: string) {
-    if (pickTarget === "a") {
+    const slot = pickTargetRef.current;
+    if (slot === "a") {
       setCustomA(null);
       setSiteA(id);
-      setPickTarget("b");
+      setFocusLatLon(null);
+      setFocusSiteId(id);
+      setFocusNonce((n) => n + 1);
     } else {
       setCustomB(null);
       setSiteB(id);
+      setFocusLatLon(null);
+      setFocusSiteId(id);
+      setFocusNonce((n) => n + 1);
     }
   }
 
-  function onPickPoint(lat: number, lon: number) {
-    const name =
-      pickTarget === "a"
-        ? `${t("labelA")} (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`
-        : `${t("labelB")} (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`;
-    if (pickTarget === "a") {
+  function applyCustomToSlot(slot: "a" | "b", lat: number, lon: number) {
+    const name = customSiteName(lat, lon);
+    if (slot === "a") {
       setCustomA({ lat, lon, name });
-      setPickTarget("b");
     } else {
       setCustomB({ lat, lon, name });
     }
     setFocusLatLon({ lat, lon });
     setFocusSiteId(null);
     setFocusNonce((n) => n + 1);
+  }
+
+  function onPickPoint(lat: number, lon: number) {
+    applyCustomToSlot(pickTargetRef.current, lat, lon);
   }
 
   function goToSlot(slot: "a" | "b") {
@@ -223,6 +245,7 @@ export default function AppPage() {
   async function runCompare() {
     setBusy(true);
     setError("");
+    setWindowNotice("");
     try {
       const r = await dataApi.compare({
         start,
@@ -238,8 +261,17 @@ export default function AppPage() {
       });
       setResult(r);
       setQueriedAt(new Date().toISOString());
+      if (r.window.clamped) {
+        setWindowNotice(
+          t("windowClampedNotice", { start: r.window.start, end: r.window.end })
+        );
+      }
     } catch (e: any) {
-      setError(e.message || t("compareFailed"));
+      const raw = e.message || t("compareFailed");
+      const needNet =
+        typeof raw === "string" &&
+        (raw.includes("Connect to the Internet") || raw.includes("Conéctate a Internet"));
+      setError(needNet ? t("horizonsNeedInternet") : raw);
     } finally {
       setBusy(false);
     }
@@ -263,7 +295,10 @@ export default function AppPage() {
     ? {
         lat: skySiteMeta.lat,
         lon: skySiteMeta.lon,
-        elev_km: "elev_km" in skySiteMeta ? skySiteMeta.elev_km ?? 0 : 0,
+        elev_km:
+          "elev_km" in skySiteMeta && typeof skySiteMeta.elev_km === "number"
+            ? skySiteMeta.elev_km
+            : 0,
         site_id:
           pickTarget === "b"
             ? customB
@@ -276,10 +311,10 @@ export default function AppPage() {
           skySiteMeta.name ||
           (pickTarget === "b"
             ? customB
-              ? t("customPoint")
+              ? customSiteName(customB.lat, customB.lon)
               : siteB
             : customA
-              ? t("customPoint")
+              ? customSiteName(customA.lat, customA.lon)
               : siteA),
         slot: pickTarget,
       }
@@ -406,20 +441,17 @@ export default function AppPage() {
           <label className="block text-xs text-white/55">
             {t("siteA")}
             <select
-              className="mt-1 w-full rounded border border-white/15 bg-black/50 px-2 py-2 text-sm text-white"
+              className="mt-1 w-full rounded border border-white/15 bg-black/50 px-2 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-45"
               value={customA ? "__custom__" : siteA}
+              disabled={pickTarget !== "a"}
               onChange={(e) => {
-                if (e.target.value === "__custom__") return;
+                if (pickTarget !== "a" || e.target.value === "__custom__") return;
                 setCustomA(null);
                 setSiteA(e.target.value);
-                setPickTarget("a");
               }}
-              onFocus={() => setPickTarget("a")}
             >
               {customA && (
-                <option value="__custom__">
-                  {t("customPoint")} ({fmtCoord(customA.lat)}°, {fmtCoord(customA.lon)}°)
-                </option>
+                <option value="__custom__">{customA.name ?? customSiteName(customA.lat, customA.lon)}</option>
               )}
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -430,27 +462,23 @@ export default function AppPage() {
             {siteAMeta && (
               <span className="mt-1 block text-[11px] text-white/40">
                 {t("lat")} {fmtCoord(siteAMeta.lat)}° · {t("lon")} {fmtCoord(siteAMeta.lon)}°
-                {customA ? ` · ${t("customPoint")}` : ""}
               </span>
             )}
           </label>
           <label className="block text-xs text-white/55">
             {t("siteB")}
             <select
-              className="mt-1 w-full rounded border border-white/15 bg-black/50 px-2 py-2 text-sm text-white"
+              className="mt-1 w-full rounded border border-white/15 bg-black/50 px-2 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-45"
               value={customB ? "__custom__" : siteB}
+              disabled={pickTarget !== "b"}
               onChange={(e) => {
-                if (e.target.value === "__custom__") return;
+                if (pickTarget !== "b" || e.target.value === "__custom__") return;
                 setCustomB(null);
                 setSiteB(e.target.value);
-                setPickTarget("b");
               }}
-              onFocus={() => setPickTarget("b")}
             >
               {customB && (
-                <option value="__custom__">
-                  {t("customPoint")} ({fmtCoord(customB.lat)}°, {fmtCoord(customB.lon)}°)
-                </option>
+                <option value="__custom__">{customB.name ?? customSiteName(customB.lat, customB.lon)}</option>
               )}
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -461,26 +489,25 @@ export default function AppPage() {
             {siteBMeta && (
               <span className="mt-1 block text-[11px] text-white/40">
                 {t("lat")} {fmtCoord(siteBMeta.lat)}° · {t("lon")} {fmtCoord(siteBMeta.lon)}°
-                {customB ? ` · ${t("customPoint")}` : ""}
               </span>
             )}
           </label>
           <label className="block text-xs text-white/55">
             {t("startUtc")}
-            <input
-              className="mt-1 w-full rounded border border-white/15 bg-black/50 px-2 py-2 text-sm text-white"
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-            />
+            <UtcDateTimePicker value={start} onChange={setStart} timeIntervals={60} />
           </label>
           <label className="block text-xs text-white/55">
             {t("endUtc")}
-            <input
-              className="mt-1 w-full rounded border border-white/15 bg-black/50 px-2 py-2 text-sm text-white"
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-            />
+            <UtcDateTimePicker value={end} onChange={setEnd} timeIntervals={60} />
           </label>
+          {horizonsWindow && !customA && !customB && (
+            <p className="text-[11px] leading-snug text-white/50">
+              {t(offline ? "horizonsOfflineHint" : "horizonsOnlineHint", {
+                start: horizonsWindow.start,
+                end: horizonsWindow.end,
+              })}
+            </p>
+          )}
           <button
             type="button"
             disabled={busy || samePoint}
@@ -490,6 +517,7 @@ export default function AppPage() {
             {busy ? (customA || customB ? t("comparingLive") : t("comparing")) : t("compareSites")}
           </button>
           {error && <p className="text-sm text-red-300">{error}</p>}
+          {windowNotice && <p className="text-sm text-amber-200/90">{windowNotice}</p>}
         </aside>
       </div>
 
