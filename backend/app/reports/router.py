@@ -7,12 +7,24 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_current_user
+from app.core.activity import log_activity
+from app.core.dependencies import AuthPrincipal, get_current_user
+from app.core.principal import is_guest
 from database.models.report import SavedReport
 from database.models.user import User
 from database.session import get_db
 
 router = APIRouter(prefix="/reports", tags=["reports"])
+
+
+def _reject_guest(principal: AuthPrincipal) -> User:
+    """Guest data stays in the browser — never write/read account history."""
+    if is_guest(principal):
+        raise HTTPException(
+            status_code=403,
+            detail="Guest sessions store reports only in the browser, not on the server",
+        )
+    return principal  # type: ignore[return-value]
 
 
 class SaveReportBody(BaseModel):
@@ -50,9 +62,12 @@ def _iso(dt: datetime | None) -> str:
 
 @router.get("")
 def list_reports(
-    _user: User = Depends(get_current_user),
+    principal: AuthPrincipal = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if is_guest(principal):
+        return {"reports": []}
+    _user = principal  # type: ignore[assignment]
     rows = (
         db.query(SavedReport)
         .filter(SavedReport.user_id == _user.id)
@@ -79,9 +94,10 @@ def list_reports(
 @router.post("")
 def save_report(
     body: SaveReportBody,
-    _user: User = Depends(get_current_user),
+    principal: AuthPrincipal = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    _user = _reject_guest(principal)
     queried = datetime.now(timezone.utc)
     if body.queried_at:
         try:
@@ -108,6 +124,17 @@ def save_report(
     db.add(row)
     db.commit()
     db.refresh(row)
+    log_activity(
+        db,
+        action="report_save",
+        user_id=_user.id,
+        detail={
+            "report_id": row.id,
+            "winner_name": row.winner_name,
+            "window_start": row.window_start,
+            "window_end": row.window_end,
+        },
+    )
     return {
         "id": row.id,
         "title": row.title,
@@ -124,9 +151,10 @@ def save_report(
 @router.get("/{report_id}")
 def get_report(
     report_id: int,
-    _user: User = Depends(get_current_user),
+    principal: AuthPrincipal = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    _user = _reject_guest(principal)
     row = (
         db.query(SavedReport)
         .filter(SavedReport.id == report_id, SavedReport.user_id == _user.id)
@@ -151,9 +179,10 @@ def get_report(
 def patch_report(
     report_id: int,
     body: PatchReportBody,
-    _user: User = Depends(get_current_user),
+    principal: AuthPrincipal = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    _user = _reject_guest(principal)
     row = (
         db.query(SavedReport)
         .filter(SavedReport.id == report_id, SavedReport.user_id == _user.id)
@@ -174,9 +203,10 @@ def patch_report(
 @router.delete("/{report_id}")
 def delete_report(
     report_id: int,
-    _user: User = Depends(get_current_user),
+    principal: AuthPrincipal = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    _user = _reject_guest(principal)
     row = (
         db.query(SavedReport)
         .filter(SavedReport.id == report_id, SavedReport.user_id == _user.id)

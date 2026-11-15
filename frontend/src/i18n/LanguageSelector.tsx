@@ -8,12 +8,12 @@ type Props = {
   compact?: boolean;
 };
 
-export default function LanguageSelector(_props: Props) {
+export default function LanguageSelector({ compact }: Props) {
   const { lang, setLang, t } = useI18n();
   const labelId = "mani-lang-label";
 
   return (
-    <div className="mani-lang text-sm text-white/70">
+    <div className={`mani-lang text-sm text-white/70${compact ? " mani-lang--compact" : ""}`}>
       <span id={labelId} className="mani-lang__label">
         {t("language")}
       </span>

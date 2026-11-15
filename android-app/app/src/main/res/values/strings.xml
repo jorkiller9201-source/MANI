@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MANI</string>
+    <string name="loading">Loading MANI…</string>
+    <string name="offline_banner">Offline — using cached MANI data when available</string>
+</resources>

@@ -1,0 +1,11 @@
+:8080 {
+	handle_path /api/* {
+		reverse_proxy 127.0.0.1:8100
+	}
+	handle /health {
+		reverse_proxy 127.0.0.1:8100
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3100
+	}
+}

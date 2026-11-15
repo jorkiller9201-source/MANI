@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CompareResult } from "@/lib/api";
 import { reportsApi } from "@/lib/api";
+import { guestReports } from "@/lib/guestStorage";
 import { buildLocalizedReport } from "@/i18n/buildReport";
 import { useI18n } from "@/i18n/I18nProvider";
 import { LANGUAGES, type LangCode } from "@/i18n/languages";
@@ -104,6 +105,7 @@ export default function ReportExport({
   reportId,
   reportCreatedAt,
   onMapImageRepaired,
+  guestMode = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -120,6 +122,8 @@ export default function ReportExport({
   reportCreatedAt?: string;
   /** Persist a one-time live-globe repair for an old save */
   onMapImageRepaired?: (id: number, mapImage: string) => void;
+  /** Guest: persist to localStorage only — never POST /reports */
+  guestMode?: boolean;
 }) {
   const { lang, t } = useI18n();
   const [reportLang, setReportLang] = useState<LangCode>(lang);
@@ -236,7 +240,7 @@ export default function ReportExport({
         return;
       }
       const title = `${result.a.site.name} vs ${result.b.site.name}`;
-      const saved = await reportsApi.save({
+      const body = {
         title,
         winner_name: result.winner_name,
         window_start: result.window.start,
@@ -251,7 +255,8 @@ export default function ReportExport({
             map_image: snap || null,
           },
         },
-      });
+      };
+      const saved = guestMode ? guestReports.save(body) : await reportsApi.save(body);
       setSavedId(saved.id);
       onSaved?.();
       requestAnimationFrame(() => {
@@ -315,7 +320,7 @@ export default function ReportExport({
         {error && <p className="mani-export__error no-print">{error}</p>}
         {savedId != null && (
           <p className="mani-export__ok no-print">
-            {t("exportSaved", { id: savedId })}
+            {guestMode ? t("exportSavedLocal", { id: savedId }) : t("exportSaved", { id: savedId })}
           </p>
         )}
         <div className="mani-export__scroll">

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">azurecontainerapps.io</domain>
+        <domain includeSubdomains="true">nasa.gov</domain>
+        <domain includeSubdomains="true">jpl.nasa.gov</domain>
+    </domain-config>
+</network-security-config>

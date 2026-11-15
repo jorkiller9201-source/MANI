@@ -46,12 +46,20 @@ export default function HomePage() {
           {t("signIn")}
         </Link>
         <Link
-          href="/register"
+          href="/login?guest=1"
           className="rounded border border-white/25 px-5 py-2.5 text-sm font-semibold text-white"
         >
-          {t("createAccount")}
+          {t("continueAsGuest")}
         </Link>
+        <a
+          href="/downloads/mani.apk"
+          download="mani-nova3.apk"
+          className="rounded border border-[#f2d27a]/60 px-5 py-2.5 text-sm font-semibold text-[#f2d27a]"
+        >
+          {t("downloadApk")}
+        </a>
       </div>
+      <p className="mt-3 max-w-xl text-xs text-white/45">{t("downloadApkHint")}</p>
       <p className="mt-10 text-xs text-white/45">{t("homeFooter")}</p>
     </main>
   );

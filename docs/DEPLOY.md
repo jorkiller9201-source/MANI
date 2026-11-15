@@ -5,6 +5,7 @@
 - Frontend: **3100**
 - Backend: **8100**
 - Oracle HTTPS: **9543** → `https://158.101.2.100:9543`
+- Azure (público): `https://mani-web.ashysky-26ab9584.eastus.azurecontainerapps.io`
 
 ## Backend
 
@@ -27,6 +28,22 @@ npm run dev
 ```
 
 Open http://localhost:3100
+
+## Google Sign-In (optional)
+
+Uses **Google Identity Services** (ID token). No inventes secrets: créalos en Google Cloud.
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → Create credentials → **OAuth client ID** → Application type **Web application**.
+2. Authorized JavaScript origins: `http://localhost:3100`, `https://mani-nova3.duckdns.org`, and the Azure URL if needed.
+3. Authorized redirect URIs: the same origins (path `/` is fine).
+4. Copy **Client ID** into:
+   - `backend/.env` → `GOOGLE_CLIENT_ID=...`
+   - `frontend/.env.local` → `NEXT_PUBLIC_GOOGLE_CLIENT_ID=...`
+   - Azure: env `GOOGLE_CLIENT_ID` on the container; rebuild image with  
+     `docker build --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=...` (Next bakes public env at build).
+5. Restart backend and frontend. Login shows **Continue with Google** when the public Client ID is set.
+
+`GOOGLE_CLIENT_SECRET` is unused for the ID-token flow (leave blank).
 
 ## Offline demo
 

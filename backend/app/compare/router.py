@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from app.compare.service import compare_sites
-from app.core.dependencies import get_current_user
-from database.models.user import User
+from app.core.activity import log_activity
+from app.core.dependencies import AuthPrincipal, get_current_user
+from app.core.principal import is_guest
+from database.session import get_db
 
 router = APIRouter(prefix="/compare", tags=["compare"])
 
@@ -21,10 +24,49 @@ class CompareBody(BaseModel):
     end: str = Field(description="ISO UTC end")
 
 
+def _log_compare(
+    db: Session,
+    principal: AuthPrincipal,
+    *,
+    site_a: str | None,
+    site_b: str | None,
+    name_a: str | None,
+    name_b: str | None,
+    start: str,
+    end: str,
+    result: dict,
+) -> None:
+    guest = is_guest(principal)
+    a = result.get("a") or {}
+    b = result.get("b") or {}
+    log_activity(
+        db,
+        action="compare",
+        user_id=None if guest else getattr(principal, "id", None),
+        is_guest=guest,
+        detail={
+            "site_a": site_a,
+            "site_b": site_b,
+            "name_a": name_a or a.get("name"),
+            "name_b": name_b or b.get("name"),
+            "start": start,
+            "end": end,
+            "winner_id": result.get("winner_id"),
+            "winner_name": result.get("winner_name"),
+            "score_a": a.get("score"),
+            "score_b": b.get("score"),
+        },
+    )
+
+
 @router.post("")
-def compare(body: CompareBody, _user: User = Depends(get_current_user)):
+def compare(
+    body: CompareBody,
+    principal: AuthPrincipal = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     try:
-        return compare_sites(
+        result = compare_sites(
             body.site_a,
             body.site_b,
             body.start,
@@ -42,6 +84,18 @@ def compare(body: CompareBody, _user: User = Depends(get_current_user)):
         raise HTTPException(status_code=503, detail=str(e)) from e
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
+    _log_compare(
+        db,
+        principal,
+        site_a=body.site_a,
+        site_b=body.site_b,
+        name_a=body.name_a,
+        name_b=body.name_b,
+        start=body.start,
+        end=body.end,
+        result=result if isinstance(result, dict) else {},
+    )
+    return result
 
 
 @router.get("")
@@ -56,10 +110,11 @@ def compare_get(
     lon_b: float | None = Query(None),
     name_a: str | None = Query(None),
     name_b: str | None = Query(None),
-    _user: User = Depends(get_current_user),
+    principal: AuthPrincipal = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     try:
-        return compare_sites(
+        result = compare_sites(
             site_a,
             site_b,
             start,
@@ -77,3 +132,15 @@ def compare_get(
         raise HTTPException(status_code=503, detail=str(e)) from e
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
+    _log_compare(
+        db,
+        principal,
+        site_a=site_a,
+        site_b=site_b,
+        name_a=name_a,
+        name_b=name_b,
+        start=start,
+        end=end,
+        result=result if isinstance(result, dict) else {},
+    )
+    return result

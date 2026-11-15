@@ -16,12 +16,16 @@ class Settings(BaseSettings):
     secret_key: str = "mani-change-this-secret-key-in-production-nova3"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 480
+    # Ephemeral guest JWT (no User / UserSession rows). Short enough for demos.
+    guest_token_expire_minutes: int = 120
 
     database_url: str = DEFAULT_SQLITE
 
     cors_allow_origins: str = (
         "http://localhost:3100,http://127.0.0.1:3100,"
-        "https://158.101.2.100:9543"
+        "https://158.101.2.100:9543,"
+        "https://mani-nova3.duckdns.org,"
+        "https://mani-web.ashysky-26ab9584.eastus.azurecontainerapps.io"
     )
 
     login_fail_max_attempts: int = 10
@@ -46,6 +50,11 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     # When SMTP is unset and APP_ENV=development, log the temp password instead of failing.
     smtp_password_reset_dev_log: bool = True
+
+    # Google Sign-In (GIS ID token). Same Web Client ID as NEXT_PUBLIC_GOOGLE_CLIENT_ID.
+    # Client secret only needed if you later switch to authorization-code exchange.
+    google_client_id: str = ""
+    google_client_secret: str = ""
 
 
 settings = Settings()

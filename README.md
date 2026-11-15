@@ -24,6 +24,7 @@ Admin seed: `admin@mani.nova3` / `Nova3Mani!` (or register a new account).
 | Next.js | 3100 |
 | FastAPI | 8100 |
 | Oracle HTTPS | 9543 (`https://158.101.2.100:9543`) |
+| Azure (público) | `https://mani-web.ashysky-26ab9584.eastus.azurecontainerapps.io` |
 
 ## Docs
 

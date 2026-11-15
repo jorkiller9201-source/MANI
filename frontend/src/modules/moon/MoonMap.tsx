@@ -427,11 +427,6 @@ const navBtnStyle: CSSProperties = {
   userSelect: "none",
 };
 
-function unlockCamera(viewer: any, Cesium: any) {
-  viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
-  viewer.__maniUserFlew = true;
-}
-
 /** Convert a lookAt-locked pose into a free camera so zoom/pan persist. */
 function freeCameraFromCurrentPose(viewer: any, Cesium: any) {
   const position = Cesium.Cartesian3.clone(viewer.camera.positionWC);
@@ -562,6 +557,7 @@ export default function MoonMap({
   const [showCraters, setShowCraters] = useState(true);
   const [showRelief, setShowRelief] = useState(true);
   const [showSky, setShowSky] = useState(true);
+  const [skyEpochOpen, setSkyEpochOpen] = useState(false);
   const [sky, setSky] = useState<SkySnapshot | null>(null);
   const [skyBusy, setSkyBusy] = useState(false);
   const [skyError, setSkyError] = useState("");
@@ -1513,28 +1509,28 @@ export default function MoonMap({
       </div>
 
       <div
-        className="flex flex-col items-end gap-1.5"
-        style={{ position: "absolute", right: 12, top: 12, zIndex: 20 }}
+        className="flex max-w-[46%] flex-col items-end gap-1 sm:max-w-none"
+        style={{ position: "absolute", right: 8, top: 8, zIndex: 20 }}
       >
-        <label className="flex cursor-pointer items-center gap-2 rounded bg-black/80 px-2.5 py-1.5 text-xs text-white shadow">
+        <label className="flex cursor-pointer items-center gap-1.5 rounded bg-black/80 px-2 py-1 text-[10px] text-white shadow sm:gap-2 sm:px-2.5 sm:py-1.5 sm:text-xs">
           <input
             type="checkbox"
             className="accent-[#f2d27a]"
             checked={showNames}
             onChange={(e) => setShowNames(e.target.checked)}
           />
-          <span>{t("showNames")}</span>
+          <span className="truncate">{t("showNames")}</span>
         </label>
-        <label className="flex cursor-pointer items-center gap-2 rounded bg-black/80 px-2.5 py-1.5 text-xs text-white shadow">
+        <label className="flex cursor-pointer items-center gap-1.5 rounded bg-black/80 px-2 py-1 text-[10px] text-white shadow sm:gap-2 sm:px-2.5 sm:py-1.5 sm:text-xs">
           <input
             type="checkbox"
             className="accent-[#7ec8ff]"
             checked={showCraters}
             onChange={(e) => setShowCraters(e.target.checked)}
           />
-          <span>{t("showCraters")}</span>
+          <span className="truncate">{t("showCraters")}</span>
         </label>
-        <label className="flex cursor-pointer items-center gap-2 rounded bg-black/80 px-2.5 py-1.5 text-xs text-white shadow">
+        <label className="flex cursor-pointer items-center gap-1.5 rounded bg-black/80 px-2 py-1 text-[10px] text-white shadow sm:gap-2 sm:px-2.5 sm:py-1.5 sm:text-xs">
           <input
             type="checkbox"
             className="accent-[#c4a574]"
@@ -1542,78 +1538,104 @@ export default function MoonMap({
             onChange={(e) => setShowRelief(e.target.checked)}
             disabled={!!offline}
           />
-          <span>{t("showRelief")}</span>
+          <span className="truncate">{t("showRelief")}</span>
         </label>
-        <label className="flex cursor-pointer items-center gap-2 rounded bg-black/80 px-2.5 py-1.5 text-xs text-white shadow">
+        <label className="flex cursor-pointer items-center gap-1.5 rounded bg-black/80 px-2 py-1 text-[10px] text-white shadow sm:gap-2 sm:px-2.5 sm:py-1.5 sm:text-xs">
           <input
             type="checkbox"
             className="accent-[#ffcc33]"
             checked={showSky}
-            onChange={(e) => setShowSky(e.target.checked)}
+            onChange={(e) => {
+              const on = e.target.checked;
+              setShowSky(on);
+              if (!on) setSkyEpochOpen(false);
+            }}
           />
-          <span>{t("showSkyBodies")}</span>
+          <span className="truncate">{t("showSkyBodies")}</span>
         </label>
       </div>
 
       {showSky && (
         <div
-          className="rounded bg-black/85 px-2.5 py-2 text-xs text-white shadow"
-          style={{
-            position: "absolute",
-            left: 12,
-            top: 12,
-            zIndex: 20,
-            width: "min(260px, calc(100% - 160px))",
-            pointerEvents: "auto",
-          }}
+          className="pointer-events-auto"
+          style={{ position: "absolute", left: 0, top: 12, zIndex: 21 }}
         >
-          <div className="mb-1 font-semibold text-[#f2d27a]">{t("skyEpoch")}</div>
-          <UtcDateTimePicker
-            compact
-            timeIntervals={15}
-            value={skyTime || "2026-11-15T00:00:00Z"}
-            onChange={(iso) => onSkyTimeChange?.(iso)}
-          />
-          {compareStart && onSkyTimeChange && (
+          {!skyEpochOpen ? (
             <button
               type="button"
-              className="mt-1.5 text-[10px] text-[#7ec8ff] underline"
-              onClick={() => onSkyTimeChange(compareStart)}
+              onClick={() => setSkyEpochOpen(true)}
+              title={t("skyEpochShow")}
+              aria-expanded={false}
+              className="rounded-r-md border border-l-0 border-[#f2d27a]/50 bg-black/85 py-2 pl-1.5 pr-2 text-[10px] font-semibold tracking-wide text-[#f2d27a] shadow sm:text-[11px]"
+              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
             >
-              {t("skySyncStart")}
+              {t("skyEpochTab")}
             </button>
-          )}
-          <div className="mt-1.5 text-[10px] text-white/45">
-            {t("skyObserver")}{" "}
-            <span
-              style={{
-                color: skyObserver?.slot === "b" ? COLOR_B : COLOR_A,
-                fontWeight: 700,
-              }}
+          ) : (
+            <div
+              className="ml-2 rounded bg-black/90 px-2.5 py-2 text-xs text-white shadow-lg"
+              style={{ width: "min(260px, calc(100vw - 7rem))" }}
             >
-              {skyObserver?.slot === "b" ? "B" : "A"}
-            </span>
-            {skyObserver?.name ? ` · ${skyObserver.name}` : ""}
-          </div>
-          {skyBusy && <div className="mt-1 text-[10px] text-white/55">{t("skyLoading")}</div>}
-          {skyError && <div className="mt-1 text-[10px] text-red-300">{skyError}</div>}
-          {sky && !skyBusy && (
-            <div className="mt-1.5 space-y-0.5 text-[10px] leading-snug text-white/80">
-              <div>
-                <span style={{ color: COLOR_SUN }}>{t("skySun")}</span>
-                {": "}
-                {sky.sun.elevation_deg != null ? `${sky.sun.elevation_deg.toFixed(2)}°` : "—"}
-                {" · "}
-                {sky.sun.above_horizon ? t("skyAbove") : t("skyBelow")}
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <div className="font-semibold text-[#f2d27a]">{t("skyEpoch")}</div>
+                <button
+                  type="button"
+                  onClick={() => setSkyEpochOpen(false)}
+                  title={t("skyEpochHide")}
+                  aria-expanded={true}
+                  className="rounded px-1.5 py-0.5 text-[11px] text-white/70 hover:bg-white/10 hover:text-white"
+                >
+                  ✕
+                </button>
               </div>
-              <div>
-                <span style={{ color: COLOR_EARTH }}>{t("skyEarth")}</span>
-                {": "}
-                {sky.earth.elevation_deg != null ? `${sky.earth.elevation_deg.toFixed(2)}°` : "—"}
-                {" · "}
-                {sky.earth.above_horizon ? t("skyAbove") : t("skyBelow")}
+              <UtcDateTimePicker
+                compact
+                timeIntervals={15}
+                value={skyTime || "2026-11-15T00:00:00Z"}
+                onChange={(iso) => onSkyTimeChange?.(iso)}
+              />
+              {compareStart && onSkyTimeChange && (
+                <button
+                  type="button"
+                  className="mt-1.5 text-[10px] text-[#7ec8ff] underline"
+                  onClick={() => onSkyTimeChange(compareStart)}
+                >
+                  {t("skySyncStart")}
+                </button>
+              )}
+              <div className="mt-1.5 text-[10px] text-white/45">
+                {t("skyObserver")}{" "}
+                <span
+                  style={{
+                    color: skyObserver?.slot === "b" ? COLOR_B : COLOR_A,
+                    fontWeight: 700,
+                  }}
+                >
+                  {skyObserver?.slot === "b" ? "B" : "A"}
+                </span>
+                {skyObserver?.name ? ` · ${skyObserver.name}` : ""}
               </div>
-              <div className="pt-0.5 text-white/40">{t("skySpaceHint")}</div>
+              {skyBusy && <div className="mt-1 text-[10px] text-white/55">{t("skyLoading")}</div>}
+              {skyError && <div className="mt-1 text-[10px] text-red-300">{skyError}</div>}
+              {sky && !skyBusy && (
+                <div className="mt-1.5 space-y-0.5 text-[10px] leading-snug text-white/80">
+                  <div>
+                    <span style={{ color: COLOR_SUN }}>{t("skySun")}</span>
+                    {": "}
+                    {sky.sun.elevation_deg != null ? `${sky.sun.elevation_deg.toFixed(2)}°` : "—"}
+                    {" · "}
+                    {sky.sun.above_horizon ? t("skyAbove") : t("skyBelow")}
+                  </div>
+                  <div>
+                    <span style={{ color: COLOR_EARTH }}>{t("skyEarth")}</span>
+                    {": "}
+                    {sky.earth.elevation_deg != null ? `${sky.earth.elevation_deg.toFixed(2)}°` : "—"}
+                    {" · "}
+                    {sky.earth.above_horizon ? t("skyAbove") : t("skyBelow")}
+                  </div>
+                  <div className="pt-0.5 text-white/40">{t("skySpaceHint")}</div>
+                </div>
+              )}
             </div>
           )}
         </div>

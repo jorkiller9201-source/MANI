@@ -12,6 +12,7 @@ import {
   type Site,
   type UserMe,
 } from "@/lib/api";
+import { guestPrefs } from "@/lib/guestStorage";
 import { useI18n } from "@/i18n/I18nProvider";
 import LanguageSelector from "@/i18n/LanguageSelector";
 import AboutButton from "@/i18n/AboutButton";
@@ -19,6 +20,7 @@ import { buildLocalizedReport } from "@/i18n/buildReport";
 import ReportExport from "@/modules/report/ReportExport";
 import ReportHistory from "@/modules/report/ReportHistory";
 import ReportDailyTimeline from "@/modules/report/ReportDailyTimeline";
+import AdminPanel from "@/modules/admin/AdminPanel";
 import { resolveDailyTimeline } from "@/modules/report/dailyTimeline";
 import UtcDateTimePicker from "@/components/UtcDateTimePicker";
 
@@ -153,6 +155,7 @@ export default function AppPage() {
   const [queriedAt, setQueriedAt] = useState<string>("");
   const [exportOpen, setExportOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [horizonsWindow, setHorizonsWindow] = useState<{ start: string; end: string } | null>(
     null
   );
@@ -183,7 +186,25 @@ export default function AppPage() {
     }
     authApi
       .me()
-      .then(setUser)
+      .then((me) => {
+        if (me.must_change_password) {
+          router.replace("/change-password");
+          return;
+        }
+        setUser(me);
+        if (me.is_guest) {
+          const prefs = guestPrefs.load();
+          if (prefs) {
+            if (prefs.siteA) setSiteA(prefs.siteA);
+            if (prefs.siteB) setSiteB(prefs.siteB);
+            if (prefs.customA !== undefined) setCustomA(prefs.customA);
+            if (prefs.customB !== undefined) setCustomB(prefs.customB);
+            if (prefs.start) setStart(prefs.start);
+            if (prefs.end) setEnd(prefs.end);
+            if (prefs.skyTime) setSkyTime(prefs.skyTime);
+          }
+        }
+      })
       .catch(() => {
         router.replace("/login");
       });
@@ -195,6 +216,19 @@ export default function AppPage() {
       })
       .catch((e) => setError(e.message));
   }, [mounted, router]);
+
+  useEffect(() => {
+    if (!user?.is_guest) return;
+    guestPrefs.save({
+      siteA,
+      siteB,
+      customA,
+      customB,
+      start,
+      end,
+      skyTime,
+    });
+  }, [user?.is_guest, siteA, siteB, customA, customB, start, end, skyTime]);
 
   function onMapSelect(id: string) {
     const slot = pickTargetRef.current;
@@ -353,30 +387,72 @@ export default function AppPage() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl px-4 py-4">
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="mx-auto min-h-screen max-w-7xl px-3 py-3 sm:px-4 sm:py-4">
+      <header className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Image
             src="/mani-logo.png"
             alt="MANI"
             width={56}
             height={56}
-            className="h-14 w-14"
+            className="h-10 w-10 shrink-0 sm:h-14 sm:w-14"
             priority
           />
-          <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-[#f2d27a]">{t("brandSub")}</div>
-            <h1 className="text-2xl font-semibold text-white">{t("appTitle")}</h1>
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#f2d27a] sm:text-xs">{t("brandSub")}</div>
+            <h1 className="truncate text-lg font-semibold text-white sm:text-2xl">{t("appTitle")}</h1>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-sm text-white/70" suppressHydrationWarning>
-          <span suppressHydrationWarning>{user?.email}</span>
+        <div
+          className="flex flex-wrap items-center gap-2 text-xs text-white/70 sm:gap-3 sm:text-sm"
+          suppressHydrationWarning
+        >
+          {user?.is_guest ? (
+            <span className="inline-flex max-w-[16rem] items-center gap-1.5 truncate" suppressHydrationWarning>
+              <span className="truncate font-medium text-white">{t("guestLabel")}</span>
+              <span className="shrink-0 rounded border border-[#f2d27a]/45 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[#f2d27a]">
+                {t("guestBadge")}
+              </span>
+            </span>
+          ) : (
+            <span className="hidden max-w-[12rem] truncate md:inline" suppressHydrationWarning>
+              {user?.email}
+            </span>
+          )}
           <LanguageSelector />
           <AboutButton />
+          {user?.role === "admin" && (
+            <button
+              type="button"
+              onClick={() => setAdminOpen(true)}
+              className="inline-flex items-center justify-center rounded border border-[#f2d27a]/50 p-1.5 text-[#f2d27a] sm:px-2.5 sm:py-1.5"
+              aria-label={t("adminOpen")}
+              title={t("adminOpen")}
+              suppressHydrationWarning
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-4 w-4"
+                aria-hidden
+              >
+                <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.07 7.07 0 0 0-1.62-.94l-.36-2.54A.48.48 0 0 0 14 2h-4a.48.48 0 0 0-.48.42l-.36 2.54c-.58.23-1.12.54-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.65 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.3.59.22l2.39-.96c.5.4 1.04.72 1.62.94l.36 2.54c.05.24.24.42.48.42h4c.24 0 .44-.18.48-.42l.36-2.54c.58-.23 1.12-.54 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z" />
+              </svg>
+            </button>
+          )}
+          <a
+            href="/downloads/mani.apk"
+            download="mani-nova3.apk"
+            className="rounded border border-[#f2d27a]/50 px-2.5 py-1.5 text-[#f2d27a] sm:px-3"
+            title={t("downloadApkHint")}
+          >
+            {t("downloadApk")}
+          </a>
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="rounded border border-white/20 px-3 py-1.5 text-white"
+            className="rounded border border-white/20 px-2.5 py-1.5 text-white sm:px-3"
             suppressHydrationWarning
           >
             {t("historyOpen")}
@@ -384,7 +460,7 @@ export default function AppPage() {
           <button
             type="button"
             onClick={logout}
-            className="rounded border border-white/20 px-3 py-1.5 text-white"
+            className="rounded border border-white/20 px-2.5 py-1.5 text-white sm:px-3"
             suppressHydrationWarning
           >
             {t("logOut")}
@@ -392,8 +468,14 @@ export default function AppPage() {
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="aspect-square w-full max-h-[70vh]">
+      {user?.is_guest && (
+        <p className="mb-3 text-xs text-white/50" suppressHydrationWarning>
+          {t("guestLocalNote")}
+        </p>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="aspect-[4/3] w-full min-h-[240px] max-h-[62vh] sm:aspect-square sm:max-h-[70vh]">
           {sites.length > 0 ? (
             <MoonMap
               sites={sites}
@@ -591,9 +673,15 @@ export default function AppPage() {
           result={result}
           reportText={reportText}
           queriedAt={queriedAt}
+          guestMode={Boolean(user?.is_guest)}
         />
       )}
-      <ReportHistory open={historyOpen} onClose={() => setHistoryOpen(false)} />
+      <ReportHistory
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        guestMode={Boolean(user?.is_guest)}
+      />
+      <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} />
     </div>
   );
 }

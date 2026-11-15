@@ -1,4 +1,5 @@
 const TOKEN_KEY = "mani_token";
+const GUEST_FLAG_KEY = "mani_guest";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -9,6 +10,17 @@ export function setToken(token: string | null) {
   if (typeof window === "undefined") return;
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
+}
+
+export function isGuestClient(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(GUEST_FLAG_KEY) === "1";
+}
+
+export function setGuestClient(guest: boolean) {
+  if (typeof window === "undefined") return;
+  if (guest) localStorage.setItem(GUEST_FLAG_KEY, "1");
+  else localStorage.removeItem(GUEST_FLAG_KEY);
 }
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -47,6 +59,8 @@ export type UserMe = {
   email: string;
   full_name: string | null;
   role: string | null;
+  must_change_password?: boolean;
+  is_guest?: boolean;
 };
 
 export type SiteLocation = {
@@ -156,22 +170,67 @@ export const authApi = {
       throw new Error(j.detail || "Login failed");
     }
     const data = await res.json();
+    setGuestClient(false);
+    setToken(data.access_token);
+    return data as { access_token: string; must_change_password?: boolean };
+  },
+  async loginAsGuest() {
+    const data = await api<{ access_token: string; must_change_password?: boolean }>("/auth/guest", {
+      method: "POST",
+    });
+    setGuestClient(true);
     setToken(data.access_token);
     return data;
   },
+  async loginWithGoogle(idToken: string) {
+    const data = await api<{ access_token: string; must_change_password?: boolean }>("/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ id_token: idToken }),
+    });
+    setGuestClient(false);
+    setToken(data.access_token);
+    return data;
+  },
+  async googleStatus() {
+    try {
+      return await api<{ enabled: boolean }>("/auth/google/status");
+    } catch {
+      return { enabled: false };
+    }
+  },
   async register(email: string, password: string, full_name?: string) {
-    const data = await api<{ access_token: string }>("/auth/register", {
+    const data = await api<{ access_token: string; must_change_password?: boolean }>("/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password, full_name }),
     });
+    setGuestClient(false);
     setToken(data.access_token);
+    return data;
+  },
+  async changePassword(
+    new_password: string,
+  ): Promise<{ ok: boolean; must_change_password?: boolean; access_token?: string }> {
+    const data = await api<{ ok: boolean; must_change_password?: boolean; access_token?: string }>(
+      "/auth/change-password",
+      {
+        method: "POST",
+        body: JSON.stringify({ new_password }),
+      },
+    );
+    if (data.access_token) {
+      setGuestClient(false);
+      setToken(data.access_token);
+    }
     return data;
   },
   async forgotPassword(email: string): Promise<{ ok: boolean; dev_logged?: boolean }> {
     const res = await fetch("/api/auth/forgot-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({
+        email,
+        login_base: typeof window !== "undefined" ? window.location.origin : undefined,
+      }),
     });
     if (!res.ok) {
       let code = "FORGOT_PASSWORD_FAILED";
@@ -193,6 +252,7 @@ export const authApi = {
       await api("/auth/logout", { method: "POST" });
     } finally {
       setToken(null);
+      setGuestClient(false);
     }
   },
 };
@@ -296,4 +356,85 @@ export const reportsApi = {
       method: "PATCH",
       body: JSON.stringify({ map_image }),
     }),
+};
+
+export type AdminSummary = {
+  users_total: number;
+  users_active: number;
+  users_by_provider: Record<string, number>;
+  logins_7d: number;
+  compares_7d: number;
+  compares_30d: number;
+  reports_total: number;
+  reports_7d: number;
+  guest_compares_7d: number;
+  unique_active_users_7d: number;
+};
+
+export type AdminUserRow = {
+  id: number;
+  email: string;
+  full_name: string | null;
+  auth_provider: string;
+  role: string | null;
+  is_active: boolean;
+  must_change_password: boolean;
+  created_at: string;
+  last_login: string | null;
+  reports_count: number;
+  compare_count: number;
+};
+
+export type AdminActivityRow = {
+  id: number;
+  created_at: string;
+  action: string;
+  user_id: number | null;
+  user_email: string | null;
+  is_guest: boolean;
+  detail: Record<string, unknown> | null;
+};
+
+export type AdminSiteMetrics = {
+  window_days: number;
+  top_sites_by_compares: {
+    site_key: string;
+    label: string;
+    compare_count: number;
+    win_count: number;
+  }[];
+  top_sites_by_avg_score: {
+    site_key: string;
+    label: string;
+    avg_score: number;
+    max_score: number;
+    sample_n: number;
+  }[];
+  top_winners: { name: string; wins: number }[];
+  compares_by_day: { day: string; count: number }[];
+  score_by_window: {
+    window_start: string;
+    window_end: string;
+    winner_name: string | null;
+    score_a: number | null;
+    score_b: number | null;
+    n: number;
+  }[];
+};
+
+export const adminApi = {
+  summary: () => api<AdminSummary>("/admin/summary"),
+  users: (limit = 100, offset = 0) =>
+    api<{ users: AdminUserRow[]; total: number }>(
+      `/admin/users?limit=${limit}&offset=${offset}`
+    ),
+  activity: (opts?: { limit?: number; offset?: number; action?: string; user_id?: number }) => {
+    const params = new URLSearchParams();
+    params.set("limit", String(opts?.limit ?? 50));
+    params.set("offset", String(opts?.offset ?? 0));
+    if (opts?.action) params.set("action", opts.action);
+    if (opts?.user_id != null) params.set("user_id", String(opts.user_id));
+    return api<{ events: AdminActivityRow[]; total: number }>(`/admin/activity?${params}`);
+  },
+  siteMetrics: (days = 30) => api<AdminSiteMetrics>(`/admin/metrics/sites?days=${days}`),
 };

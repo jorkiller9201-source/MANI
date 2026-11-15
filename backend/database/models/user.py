@@ -21,9 +21,15 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     full_name = Column(String(255), nullable=True)
+    # Google-only accounts store a random unusable hash (SQLite keeps NOT NULL).
     hashed_password = Column(String(255), nullable=False)
+    # Google subject ("sub") from the ID token; unique when set.
+    google_id = Column(String(255), unique=True, nullable=True, index=True)
+    # local | google | local+google
+    auth_provider = Column(String(32), nullable=False, default="local")
     role_id = Column(Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    must_change_password = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_login = Column(DateTime(timezone=True), nullable=True)
 

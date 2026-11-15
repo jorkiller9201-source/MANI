@@ -3,15 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CompareResult, SavedReportSummary } from "@/lib/api";
 import { reportsApi } from "@/lib/api";
+import { guestReports } from "@/lib/guestStorage";
 import { useI18n } from "@/i18n/I18nProvider";
 import ReportExport from "./ReportExport";
 
 export default function ReportHistory({
   open,
   onClose,
+  guestMode = false,
 }: {
   open: boolean;
   onClose: () => void;
+  guestMode?: boolean;
 }) {
   const { t } = useI18n();
   const [rows, setRows] = useState<SavedReportSummary[]>([]);
@@ -30,33 +33,48 @@ export default function ReportHistory({
     setBusy(true);
     setError("");
     try {
-      const r = await reportsApi.list();
-      setRows(r.reports);
+      if (guestMode) {
+        setRows(guestReports.list());
+      } else {
+        const r = await reportsApi.list();
+        setRows(r.reports);
+      }
     } catch (e: any) {
       setError(e.message || t("historyFailed"));
     } finally {
       setBusy(false);
     }
-  }, [t]);
+  }, [t, guestMode]);
 
   useEffect(() => {
     if (open) load();
   }, [open, load]);
 
-  const persistRepairedMap = useCallback(async (id: number, map_image: string) => {
-    try {
-      await reportsApi.patchMapImage(id, map_image);
-      setReplay((prev) => (prev?.id === id ? { ...prev, mapImage: map_image } : prev));
-    } catch {
-      /* preview still shows repaired snap; next open may retry patch */
-    }
-  }, []);
+  const persistRepairedMap = useCallback(
+    async (id: number, map_image: string) => {
+      try {
+        if (guestMode) {
+          guestReports.patchMapImage(id, map_image);
+        } else {
+          await reportsApi.patchMapImage(id, map_image);
+        }
+        setReplay((prev) => (prev?.id === id ? { ...prev, mapImage: map_image } : prev));
+      } catch {
+        /* preview still shows repaired snap; next open may retry patch */
+      }
+    },
+    [guestMode]
+  );
 
   if (!open) return null;
 
   async function openReport(id: number) {
     try {
-      const d = await reportsApi.get(id);
+      const d = guestMode ? guestReports.get(id) : await reportsApi.get(id);
+      if (!d) {
+        setError(t("historyFailed"));
+        return;
+      }
       const payload = d.payload;
       const { _meta, ...rest } = payload as CompareResult & {
         _meta?: { report_text?: string; queried_at?: string; map_image?: string | null };
@@ -76,7 +94,11 @@ export default function ReportHistory({
 
   async function remove(id: number) {
     try {
-      await reportsApi.remove(id);
+      if (guestMode) {
+        guestReports.remove(id);
+      } else {
+        await reportsApi.remove(id);
+      }
       setRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e: any) {
       setError(e.message || t("historyFailed"));
@@ -91,7 +113,7 @@ export default function ReportHistory({
           <div className="mani-history__head">
             <div>
               <h2>{t("historyTitle")}</h2>
-              <p>{t("historyLead")}</p>
+              <p>{guestMode ? t("guestHistoryLead") : t("historyLead")}</p>
             </div>
             <button type="button" className="mani-export__btn ghost" onClick={onClose}>
               {t("aboutClose")}
@@ -132,6 +154,7 @@ export default function ReportHistory({
         <ReportExport
           open
           fromHistory
+          guestMode={guestMode}
           reportId={replay.id}
           reportCreatedAt={replay.createdAt}
           onClose={() => setReplay(null)}

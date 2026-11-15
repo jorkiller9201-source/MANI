@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nProvider";
 import LanguageSelector from "@/i18n/LanguageSelector";
 import AboutButton from "@/i18n/AboutButton";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,20 +17,53 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const guestAutoStarted = useRef(false);
+  const googleClientId = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
+
+  const setGoogleError = useCallback((message: string) => {
+    setError(message);
+  }, []);
+
+  const setGoogleBusy = useCallback((isBusy: boolean) => {
+    setBusy(isBusy);
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      await authApi.login(email.trim(), password);
-      router.push("/app");
+      const data = await authApi.login(email.trim(), password);
+      router.push(data.must_change_password ? "/change-password" : "/app");
     } catch (err: any) {
       setError(err.message || t("loginFailed"));
     } finally {
       setBusy(false);
     }
   }
+
+  async function onGuest() {
+    setBusy(true);
+    setError("");
+    try {
+      await authApi.loginAsGuest();
+      router.push("/app");
+    } catch (err: any) {
+      setError(err.message || t("guestLoginFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (guestAutoStarted.current) return;
+    if (typeof window === "undefined") return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("guest") !== "1") return;
+    guestAutoStarted.current = true;
+    void onGuest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot deep link from home
+  }, []);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
@@ -81,6 +115,27 @@ export default function LoginPage() {
           {busy ? t("signingIn") : t("signIn")}
         </button>
       </form>
+      {googleClientId ? (
+        <div className="relative mt-4 space-y-3">
+          <div className="flex items-center gap-3 text-xs text-white/40">
+            <span className="h-px flex-1 bg-white/15" />
+            <span>{t("orDivider")}</span>
+            <span className="h-px flex-1 bg-white/15" />
+          </div>
+          <GoogleSignInButton disabled={busy} onBusy={setGoogleBusy} onError={setGoogleError} />
+        </div>
+      ) : null}
+      <div className="mt-4">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onGuest}
+          className="w-full rounded border border-white/25 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {busy ? t("signingIn") : t("continueAsGuest")}
+        </button>
+        <p className="mt-2 text-xs text-white/45">{t("guestLocalNote")}</p>
+      </div>
       <p className="mt-4 text-sm text-white/55">
         {t("newHere")} <Link href="/register">{t("createAccount")}</Link>
       </p>

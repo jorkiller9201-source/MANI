@@ -610,10 +610,174 @@ def main():
         resultado="El Anexo A no depende del idioma y deja de verse en negro en informes ya guardados.",
     )
 
-    heading(doc, "Pendiente del resto del sábado")
-    bullet(doc, "Ensayo de la demo y guion del video (André).")
-    bullet(doc, "Prueba de acceso Oracle :9543 cuando el puente esté disponible.")
-    bullet(doc, "Ajuste fino de UI y pitch.")
+    entry_table(
+        doc,
+        "00:55",
+        "MANI público en Azure",
+        [
+            "Se elige Microsoft Azure entre las Global Offers (el trial de Google Cloud ya estaba usado en la cuenta del equipo).",
+            "MANI queda publicado en Azure Container Apps: frontend, API y datos Horizons embebidos en una sola URL HTTPS.",
+            "Health y página principal responden; la API exige login como en local.",
+        ],
+        resultado="Demo pública en https://mani-web.ashysky-26ab9584.eastus.azurecontainerapps.io para jueces y ficha del proyecto.",
+    )
+
+    entry_table(
+        doc,
+        "02:30",
+        "Recuperación de contraseña por correo",
+        [
+            "El flujo forgot-password ya genera contraseña temporal; se prepara el envío SMTP automático.",
+            "Hotmail/Outlook rechaza SMTP básico en la cuenta del equipo; se deja listo el camino con Gmail App Password.",
+            "Si el correo falla, la contraseña de la cuenta ya no se cambia (evita dejar al usuario sin acceso).",
+        ],
+        resultado="SMTP Gmail activo en Azure; forgot-password envía contraseña temporal al correo del usuario registrado.",
+    )
+
+    entry_table(
+        doc,
+        "02:45",
+        "Cambio obligatorio tras contraseña temporal",
+        [
+            "Tras recuperar acceso, el login con la clave temporal abre una pantalla para definir una contraseña nueva.",
+            "Hasta guardar la nueva clave no se entra a la app; la temporal deja de servir como definitiva.",
+        ],
+        resultado="Flujo de recuperación: correo temporal → login → elegir contraseña nueva → MANI.",
+    )
+
+    entry_table(
+        doc,
+        "03:25",
+        "APK Android conectada a Azure",
+        [
+            "Se genera una APK WebView que abre solo la URL pública de MANI en Azure.",
+            "Caché agresiva (largeHeap, DOM storage, HTTP cache; la app no borra el caché).",
+            "En la página de inicio y en la app hay descarga de la APK.",
+        ],
+        resultado="Jueces y equipo pueden instalar MANI en Android desde el sitio web.",
+    )
+
+    entry_table(
+        doc,
+        "10:50",
+        "Verificación del guardado de contraseña nueva",
+        [
+            "Se revisa el flujo recuperar → temporal → login → contraseña nueva: el hash sí se guarda en la base local.",
+            "El correo de recuperación apuntaba a Azure aunque el reset se hiciera en local; ahora el enlace usa el mismo sitio desde el que se pidió.",
+            "Tras guardar la nueva clave se emite sesión nueva y se confirma que ya no pide cambio forzado.",
+        ],
+        resultado="Cambio de contraseña verificado en local; conviene pedir el reset y entrar siempre en el mismo sitio (local o Azure).",
+    )
+
+    entry_table(
+        doc,
+        "11:00",
+        "Dominio corto hacia Azure (DuckDNS)",
+        [
+            "GoDaddy/Porkbun no se pudo reclamar (OTP); se pasa al plan B: DuckDNS gratis apuntando a Container Apps.",
+            "Jorge crea mani-nova3.duckdns.org a mano; Azure enlaza hostname, certificado HTTPS y CORS/PUBLIC_URL.",
+        ],
+        resultado="MANI público en https://mani-nova3.duckdns.org (también sigue la URL larga de Azure).",
+    )
+
+    entry_table(
+        doc,
+        "11:15",
+        "Icono MANI en la APK Android",
+        [
+            "Se usa el logo oficial del parche (mani-logo.png) como icono del launcher en todas las densidades.",
+            "Se regenera la APK de descarga en el sitio con el icono nuevo.",
+        ],
+        resultado="Al instalar MANI en Android aparece el logo del equipo en lugar del icono genérico.",
+    )
+
+    entry_table(
+        doc,
+        "11:35",
+        "Redeploy Azure con APK e icono",
+        [
+            "Se publica de nuevo MANI en Azure Container Apps con imagen de tag único (incluye APK con logo, fixes de login/cambio de contraseña y UI reciente).",
+            "Se mantiene el dominio corto DuckDNS, el certificado HTTPS y el correo SMTP ya configurados.",
+            "Health, home y descarga de la APK responden en https://mani-nova3.duckdns.org.",
+        ],
+        resultado="Revisión mani-web--0000009 en línea; demo pública actualizada sin tocar el dominio corto.",
+    )
+
+    entry_table(
+        doc,
+        "12:45",
+        "Entrar como invitado",
+        [
+            "En login y en la portada: botón «Entrar como invitado» / Continue as guest (ES/EN).",
+            "Sesión con JWT corto sin cuenta en la base; en la app se ve Invitado con nota de solo local.",
+            "Informes y preferencias de invitado quedan en el navegador/WebView; el servidor rechaza guardar historial de guest.",
+        ],
+        resultado="Se puede comparar sitios sin registrarse; los datos de invitado no persisten en la nube.",
+    )
+
+    entry_table(
+        doc,
+        "12:55",
+        "Entrar con cuenta de Google",
+        [
+            "En login: Continuar con Google / Continue with Google (junto a correo y modo invitado).",
+            "Google Identity Services (ID token): el backend verifica el token, crea o vincula la cuenta por correo y emite el JWT de MANI.",
+            "Código listo; el Client ID Web se crea a continuación en Google Cloud.",
+        ],
+        resultado="Auth con Google integrado; email/password e invitado siguen igual.",
+    )
+
+    entry_table(
+        doc,
+        "13:00",
+        "Credenciales OAuth de Google para MANI",
+        [
+            "En Google Cloud (proyecto AL REVES): cliente OAuth «MANI Web», tipo aplicación web.",
+            "Orígenes: localhost:3100, mani-nova3.duckdns.org y el host de Azure Container Apps.",
+            "Client ID en backend/.env y frontend/.env.local; /auth/google/status responde enabled.",
+        ],
+        resultado="Google Sign-In habilitado en local; falta propagar el mismo Client ID a producción Azure si se usa allí.",
+    )
+
+    entry_table(
+        doc,
+        "13:25",
+        "Proyecto GCP propio MANI (OAuth)",
+        [
+            "Se crea el proyecto Google Cloud «MANI» (id mani-nova3), aparte de AL REVES, que queda intacto.",
+            "Consent screen External con nombre MANI; cliente web «MANI Web» con localhost, DuckDNS y Azure.",
+            "Nuevo Client ID en .env local; /auth/google/status vuelve a responder enabled.",
+        ],
+        resultado="Login Google de MANI usa su propio proyecto GCP; el juego AL REVES no se tocó.",
+    )
+
+    entry_table(
+        doc,
+        "14:00",
+        "Panel admin (engranaje)",
+        [
+            "Con el usuario administrador aparece un botón de engranaje en la barra de la app.",
+            "El panel muestra resumen, usuarios registrados, actividad (inicios y comparaciones) y métricas de sitios/fechas.",
+            "Las consultas e informes quedan registrados para análisis; solo el rol admin puede verlos.",
+        ],
+        resultado="Administración operativa lista en local para revisar uso y sitios con mejor puntuación.",
+    )
+
+    entry_table(
+        doc,
+        "14:25",
+        "Redeploy Azure (admin, Google, guest)",
+        [
+            "Nueva imagen en ACR con panel admin, invitado, Google Sign-In y APK con logo MANI.",
+            "Container App actualizada; dominio https://mani-nova3.duckdns.org y certificado intactos.",
+            "GOOGLE_CLIENT_ID y PUBLIC_URL/CORS configurados en el entorno de producción.",
+        ],
+        resultado="Demo pública al día en DuckDNS y en la URL larga de Azure.",
+    )
+
+    heading(doc, "Pendiente del domingo")
+    bullet(doc, "Ensayo de la demo y guion/video (André).")
+    bullet(doc, "Ajuste fino de UI y pitch; entrega de la ficha.")
 
     heading(doc, "Criterio de cierre del sábado")
     callout(

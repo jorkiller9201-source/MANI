@@ -1,0 +1,14 @@
+**/.venv
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+**/.git
+**/.env
+**/.env.local
+**/data/moon-tiles
+**/*.md
+frontend/public/cesium
+Bitacora*
+.cursor
+agent-transcripts
