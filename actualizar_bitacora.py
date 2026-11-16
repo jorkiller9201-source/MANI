@@ -775,6 +775,65 @@ def main():
         resultado="Demo pública al día en DuckDNS y en la URL larga de Azure.",
     )
 
+    entry_table(
+        doc,
+        "15:25",
+        "Vista a pie estable en Malapert",
+        [
+            "La vista «de pie en el sitio» se caía en Cesium (pantalla negra y error de render) al cargar el relieve LOLA cerca del ojo.",
+            "Se limita el detalle del terreno y se coloca la cámara sobre la altura del mismo heightmap que se dibuja, con Sol/Tierra y el control de tiempo intactos.",
+        ],
+        resultado="En Malapert (y el resto de sitios) se puede mirar 360° sin que el render se detenga.",
+    )
+
+    entry_table(
+        doc,
+        "15:41",
+        "Vista a pie sin congelar MANI",
+        [
+            "Al abrir «de pie en el sitio» toda la app se quedaba pegada: el anclaje de cámara y el DEM pelean con Cesium cada fotograma.",
+            "Se ancla el punto una sola vez, se mira solo con el ratón, y en esta vista se usa el elipsoide + imágenes Moon Trek (sin tormenta de tiles LOLA).",
+            "Close, scrubber de tiempo y Sol/Tierra siguen respondiendo.",
+        ],
+        resultado="La modal de pie abre sin congelar MANI; mirada 360° y control de tiempo usables.",
+    )
+
+    entry_table(
+        doc,
+        "16:25",
+        "Barra de carga 0–100% en vista a pie",
+        [
+            "Al abrir el ojo (pestaña ground) se muestra una barra 0→100% hasta que el terreno lunar está listo.",
+            "El progreso sigue el viewer, las imágenes, la cámara, la muestra de altura y las teselas LOLA; luego un fade único revela la simulación.",
+            "Look y Sol/Tierra se habilitan al completar; no vuelve a bloquear por refinamiento de tiles.",
+        ],
+        resultado="La vista a pie espera con barra clara y se abre sin parpadeos a medias.",
+    )
+
+    entry_table(
+        doc,
+        "16:32",
+        "Carga del ojo ya no se queda en 55%",
+        [
+            "La barra se congelaba en 55% y a veces caía la pestaña: el DEM LOLA a altura de ojo bloqueaba las teselas y podía tumbar Cesium.",
+            "Primera pintura con elipsoide + imágenes Moon Trek; la barra avanza y revela en ~7 s (estabilidad).",
+            "El equipo pide volver: hay que estar de pie sobre el relieve LOLA, no sobre el elipsoide plano.",
+        ],
+        resultado="La barra llega a 100% sin tumbar la pestaña; queda pendiente recuperar el DEM bajo los pies.",
+    )
+
+    entry_table(
+        doc,
+        "16:40",
+        "De pie otra vez sobre el terreno LOLA",
+        [
+            "Se revierte el elipsoide de primera pintura: el DEM LOLA se monta desde el arranque (detalle moderado).",
+            "Una sola muestra de altura coloca el ojo ~120 m sobre el relieve; la barra 0–100% sigue completando por reloj (~8 s) sin esperar a que las teselas queden en cero.",
+            "Si Cesium falla al renderizar, se baja detalle y exageración antes de soltar el DEM; solo en último caso se avisa y se usa elipsoide.",
+        ],
+        resultado="La vista a pie vuelve a estar sobre el terreno 3D LOLA, con barra de carga y sin bucles que congelen MANI.",
+    )
+
     heading(doc, "Pendiente del domingo")
     bullet(doc, "Ensayo de la demo y guion/video (André).")
     bullet(doc, "Ajuste fino de UI y pitch; entrega de la ficha.")

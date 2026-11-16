@@ -1,5 +1,9 @@
 backend/.venv/
 backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/.env.production.cloud
 frontend/node_modules/
 frontend/.next/
 frontend/public/cesium/
@@ -11,6 +15,13 @@ __pycache__/
 *.pyc
 .DS_Store
 *.log
+.tmp_guest_token.txt
+.tmp_*
+~$*
+.cursor/
+infra/azure/.pending-tag
+DEMO MANI.mp4
+*.mp4
 
 android-app/local.properties
 android-app/.gradle/

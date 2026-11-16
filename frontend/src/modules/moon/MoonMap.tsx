@@ -15,6 +15,10 @@ import {
   type CelestialPose,
 } from "./celestial";
 import { SOUTH_POLE_NOMENCLATURE } from "./nomenclature";
+import {
+  createLolaTerrainProvider,
+  LOLA_TERRAIN_EXAGGERATION,
+} from "./lolaTerrain";
 import UtcDateTimePicker from "@/components/UtcDateTimePicker";
 
 export type CustomPoint = { lat: number; lon: number; name?: string };
@@ -47,6 +51,8 @@ type Props = {
   onSkyTimeChange?: (iso: string) => void;
   skyObserver?: SkyObserver | null;
   compareStart?: string;
+  /** Remount/reload Cesium when tiles or network drop */
+  onRefreshGlobe?: () => void;
 };
 
 const TREK_WAC =
@@ -528,6 +534,7 @@ export default function MoonMap({
   onSkyTimeChange,
   skyObserver,
   compareStart,
+  onRefreshGlobe,
 }: Props) {
   const { t } = useI18n();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -631,7 +638,11 @@ export default function MoonMap({
         viewer.scene.globe.showGroundAtmosphere = false;
         viewer.scene.globe.enableLighting = true;
         viewer.scene.globe.dynamicAtmosphereLighting = false;
+        // Terrain mesh + imagery; markers use fixed heights so keep depth test soft.
         viewer.scene.globe.depthTestAgainstTerrain = false;
+        if (typeof viewer.scene.globe.terrainExaggeration === "number") {
+          viewer.scene.globe.terrainExaggeration = offline ? 1.0 : LOLA_TERRAIN_EXAGGERATION;
+        }
         viewer.scene.backgroundColor = Cesium.Color.BLACK;
         viewer.scene.fog.enabled = false;
         viewer.scene.logarithmicDepthBuffer = true;
@@ -726,6 +737,16 @@ export default function MoonMap({
           reliefLayer.show = true;
           reliefLayerRef.current = reliefLayer;
           (viewer as any).__maniReliefLayer = reliefLayer;
+
+          // 3D mesh from LOLA DEM (Moon Trek) — real crater/rim displacement
+          const lolaTerrain = createLolaTerrainProvider(Cesium, moonEllipsoid);
+          if (lolaTerrain) {
+            viewer.terrainProvider = lolaTerrain;
+            (viewer as any).__maniLolaTerrain = lolaTerrain;
+            if (typeof viewer.scene.globe.terrainExaggeration === "number") {
+              viewer.scene.globe.terrainExaggeration = LOLA_TERRAIN_EXAGGERATION;
+            }
+          }
         }
 
         // Mouse / touch camera — moon-scale distances, no bounce-back inertia.
@@ -1130,11 +1151,30 @@ export default function MoonMap({
   }, [phase, showSky]);
 
   useEffect(() => {
-    const layer = reliefLayerRef.current || viewerRef.current?.__maniReliefLayer;
-    if (!layer) return;
-    layer.show = showRelief;
-    layer.alpha = showRelief ? RELIEF_ALPHA : 0;
-    viewerRef.current?.scene?.requestRender?.();
+    const viewer = viewerRef.current;
+    const Cesium = typeof window !== "undefined" ? (window as any).Cesium : null;
+    const layer = reliefLayerRef.current || viewer?.__maniReliefLayer;
+    if (layer) {
+      layer.show = showRelief;
+      layer.alpha = showRelief ? RELIEF_ALPHA : 0;
+    }
+    if (viewer && !viewer.isDestroyed?.() && Cesium) {
+      const lola = viewer.__maniLolaTerrain;
+      if (showRelief && lola) {
+        viewer.terrainProvider = lola;
+        if (typeof viewer.scene.globe.terrainExaggeration === "number") {
+          viewer.scene.globe.terrainExaggeration = LOLA_TERRAIN_EXAGGERATION;
+        }
+      } else if (!showRelief) {
+        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider({
+          ellipsoid: moonEllipsoidOf(Cesium),
+        });
+        if (typeof viewer.scene.globe.terrainExaggeration === "number") {
+          viewer.scene.globe.terrainExaggeration = 1.0;
+        }
+      }
+      viewer.scene.requestRender?.();
+    }
   }, [showRelief, phase]);
 
   // Fetch Horizons Sun/Earth at skyTime for observer (site A).
@@ -1512,6 +1552,26 @@ export default function MoonMap({
         className="flex max-w-[46%] flex-col items-end gap-1 sm:max-w-none"
         style={{ position: "absolute", right: 8, top: 8, zIndex: 20 }}
       >
+        {onRefreshGlobe && (
+          <button
+            type="button"
+            onClick={onRefreshGlobe}
+            className="inline-flex items-center gap-1.5 rounded border border-[#f2d27a]/55 bg-black/85 px-2 py-1 text-[10px] font-medium text-[#f2d27a] shadow sm:gap-2 sm:px-2.5 sm:py-1.5 sm:text-xs"
+            title={t("refreshGlobeHint")}
+            aria-label={t("refreshGlobe")}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-3.5 w-3.5 shrink-0"
+              aria-hidden
+            >
+              <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7c2.76 0 5 2.24 5 5a5 5 0 0 1-8.9 3.1L6.7 16.5A7.97 7.97 0 0 0 12 20c4.42 0 8-3.58 8-8 0-2.21-.9-4.21-2.35-5.65zM6 12c0-.69.1-1.35.3-1.97l-1.76-1.03A7.97 7.97 0 0 0 4 12c0 4.42 3.58 8 8 8v-3c-2.76 0-5-2.24-5-5z" />
+            </svg>
+            <span className="truncate">{t("refreshGlobe")}</span>
+          </button>
+        )}
         <label className="flex cursor-pointer items-center gap-1.5 rounded bg-black/80 px-2 py-1 text-[10px] text-white shadow sm:gap-2 sm:px-2.5 sm:py-1.5 sm:text-xs">
           <input
             type="checkbox"

@@ -313,6 +313,16 @@ export type SkySnapshot = {
   note?: string;
 };
 
+export type HorizonMask = {
+  site_id?: string;
+  observer_height_m?: number;
+  dem_height_m?: number | null;
+  azimuth_deg: number[];
+  horizon_elev_deg: number[];
+  source?: string;
+  computed_on_the_fly?: boolean;
+};
+
 export const dataApi = {
   sites: () =>
     api<{ sites: Site[]; horizons_window?: { start: string; end: string } | null }>("/sites"),
@@ -336,6 +346,14 @@ export const dataApi = {
     if (q.elev_km != null) params.set("elev_km", String(q.elev_km));
     if (q.site_id) params.set("site_id", q.site_id);
     return api<SkySnapshot>(`/sky?${params.toString()}`);
+  },
+  horizon: (q: { lat: number; lon: number; site_id?: string | null }) => {
+    const params = new URLSearchParams({
+      lat: String(q.lat),
+      lon: String(q.lon),
+    });
+    if (q.site_id) params.set("site_id", q.site_id);
+    return api<HorizonMask>(`/horizon?${params.toString()}`);
   },
 };
 

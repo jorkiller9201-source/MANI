@@ -13,6 +13,7 @@ from app.auth.router import router as auth_router
 from app.compare.router import router as compare_router
 from app.core.config import cors_origins_list, settings
 from app.core.rate_limit import limiter
+from app.horizon.router import router as horizon_router
 from app.reports.router import router as reports_router
 from app.sites.router import router as sites_router
 from app.sky.router import router as sky_router
@@ -72,6 +73,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(sites_router)
 app.include_router(compare_router)
+app.include_router(horizon_router)
 app.include_router(reports_router)
 app.include_router(sky_router)
 

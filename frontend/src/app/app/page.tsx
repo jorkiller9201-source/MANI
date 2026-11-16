@@ -24,6 +24,30 @@ import AdminPanel from "@/modules/admin/AdminPanel";
 import { resolveDailyTimeline } from "@/modules/report/dailyTimeline";
 import UtcDateTimePicker from "@/components/UtcDateTimePicker";
 
+/** Open standing/site simulation in a new browser tab (keeps compare UI responsive). */
+function buildGroundViewUrl(opts: {
+  slot: "a" | "b";
+  name: string;
+  lat: number;
+  lon: number;
+  siteId?: string | null;
+  elevKm?: number;
+  start: string;
+  end: string;
+}) {
+  const q = new URLSearchParams({
+    slot: opts.slot,
+    name: opts.name,
+    lat: String(opts.lat),
+    lon: String(opts.lon),
+    start: opts.start,
+    end: opts.end,
+  });
+  if (opts.siteId) q.set("siteId", opts.siteId);
+  if (opts.elevKm != null && Number.isFinite(opts.elevKm)) q.set("elevKm", String(opts.elevKm));
+  return `/app/ground?${q.toString()}`;
+}
+
 function fmtCoord(n: number, digits = 4) {
   return Number.isFinite(n) ? n.toFixed(digits) : "—";
 }
@@ -156,6 +180,7 @@ export default function AppPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [mapRemountKey, setMapRemountKey] = useState(0);
   const [horizonsWindow, setHorizonsWindow] = useState<{ start: string; end: string } | null>(
     null
   );
@@ -324,6 +349,28 @@ export default function AppPage() {
 
   const siteAMeta = customA ?? sites.find((s) => s.id === siteA);
   const siteBMeta = customB ?? sites.find((s) => s.id === siteB);
+
+  function openGroundSlot(slot: "a" | "b") {
+    const meta = slot === "a" ? siteAMeta : siteBMeta;
+    if (!meta) return;
+    const custom = slot === "a" ? customA : customB;
+    const catalogId = slot === "a" ? siteA : siteB;
+    const catalog = sites.find((s) => s.id === catalogId);
+    const name =
+      custom?.name ?? catalog?.name ?? (slot === "a" ? t("siteA") : t("siteB"));
+    const url = buildGroundViewUrl({
+      slot,
+      name,
+      lat: meta.lat,
+      lon: meta.lon,
+      siteId: custom ? null : catalogId,
+      elevKm: custom ? 0 : catalog?.elev_km ?? 0,
+      start,
+      end,
+    });
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   const skySiteMeta = pickTarget === "b" ? siteBMeta : siteAMeta;
   const skyObserver = skySiteMeta
     ? {
@@ -478,6 +525,7 @@ export default function AppPage() {
         <div className="aspect-[4/3] w-full min-h-[240px] max-h-[62vh] sm:aspect-square sm:max-h-[70vh]">
           {sites.length > 0 ? (
             <MoonMap
+              key={mapRemountKey}
               sites={sites}
               siteA={customA ? undefined : siteA}
               siteB={customB ? undefined : siteB}
@@ -493,6 +541,7 @@ export default function AppPage() {
               onSkyTimeChange={setSkyTime}
               skyObserver={skyObserver}
               compareStart={start}
+              onRefreshGlobe={() => setMapRemountKey((k) => k + 1)}
             />
           ) : (
             <div className="flex h-full items-center justify-center rounded-lg border border-white/10 text-white/50">
@@ -520,8 +569,22 @@ export default function AppPage() {
             </button>
           </div>
 
-          <label className="block text-xs text-white/55">
-            {t("siteA")}
+          <div className="block text-xs text-white/55">
+            <div className="flex items-center justify-between gap-2">
+              <span>{t("siteA")}</span>
+              <button
+                type="button"
+                onClick={() => openGroundSlot("a")}
+                disabled={!siteAMeta}
+                className="inline-flex items-center justify-center rounded border border-[#f2d27a]/45 p-1 text-[#f2d27a] disabled:opacity-40"
+                title={t("groundViewOpen")}
+                aria-label={t("groundViewOpen")}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+                  <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+                </svg>
+              </button>
+            </div>
             <select
               className="mt-1 w-full rounded border border-white/15 bg-black/50 px-2 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-45"
               value={customA ? "__custom__" : siteA}
@@ -546,9 +609,23 @@ export default function AppPage() {
                 {t("lat")} {fmtCoord(siteAMeta.lat)}° · {t("lon")} {fmtCoord(siteAMeta.lon)}°
               </span>
             )}
-          </label>
-          <label className="block text-xs text-white/55">
-            {t("siteB")}
+          </div>
+          <div className="block text-xs text-white/55">
+            <div className="flex items-center justify-between gap-2">
+              <span>{t("siteB")}</span>
+              <button
+                type="button"
+                onClick={() => openGroundSlot("b")}
+                disabled={!siteBMeta}
+                className="inline-flex items-center justify-center rounded border border-[#7ec8ff]/45 p-1 text-[#7ec8ff] disabled:opacity-40"
+                title={t("groundViewOpen")}
+                aria-label={t("groundViewOpen")}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+                  <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+                </svg>
+              </button>
+            </div>
             <select
               className="mt-1 w-full rounded border border-white/15 bg-black/50 px-2 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-45"
               value={customB ? "__custom__" : siteB}
@@ -573,7 +650,7 @@ export default function AppPage() {
                 {t("lat")} {fmtCoord(siteBMeta.lat)}° · {t("lon")} {fmtCoord(siteBMeta.lon)}°
               </span>
             )}
-          </label>
+          </div>
           <label className="block text-xs text-white/55">
             {t("startUtc")}
             <UtcDateTimePicker value={start} onChange={setStart} timeIntervals={60} />

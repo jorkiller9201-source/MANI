@@ -90,7 +90,7 @@ export const GLOSSARY_EN: GlossDict = {
 
   glossaryTerm_map_lola_relief: "LOLA relief",
   glossaryDef_map_lola_relief:
-    "Shaded terrain from the Lunar Orbiter Laser Altimeter (LOLA) overlaid on the globe to show hills and craters.",
+    "LOLA DEM mesh (3D crater rims and massifs) plus optional color-shaded overlay from NASA Moon Trek, so the globe is not a smooth sphere.",
 
   glossaryTerm_map_layers: "Map toggles (names, craters, relief, Sun & Earth)",
   glossaryDef_map_layers:
@@ -311,7 +311,7 @@ export const GLOSSARY_ES: GlossDict = {
 
   glossaryTerm_map_lola_relief: "Relieve LOLA",
   glossaryDef_map_lola_relief:
-    "Terreno sombreado del altímetro LOLA superpuesto al globo para ver colinas y cráteres.",
+    "Malla DEM LOLA (bordes de cráter y macizos en 3D) más sombreado en color de NASA Moon Trek; el globo deja de ser una esfera lisa.",
 
   glossaryTerm_map_layers: "Capas del mapa (nombres, cráteres, relieve, Sol y Tierra)",
   glossaryDef_map_layers:
