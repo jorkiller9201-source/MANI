@@ -21,3 +21,11 @@ In NASA Space Apps 2026, artificial intelligence is referred to as **Super Intel
 ## Human responsibility
 
 Team Nova 3 (Jorge Alberto Gutiérrez Canales, André Enoc Mejía, Lissa Paola Mejía Romero, and Jorge Alberto Gutiérrez Mejía observing) owns the idea, scope, data verification, and submission.
+
+## Presentation deliverable
+
+André’s English pitch/demo video for MANI was **completed on Sunday 15 November 2026** (evening, Tegucigalpa / UTC−6). It is part of the Space Apps 2026 submission together with the project page and this SI declaration.
+
+## Source code
+
+Public repository: [https://github.com/jorkiller9201-source/MANI](https://github.com/jorkiller9201-source/MANI)

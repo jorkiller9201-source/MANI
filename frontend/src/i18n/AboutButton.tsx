@@ -169,6 +169,33 @@ export default function AboutButton() {
                   <RefList items={SI_REFS} t={t} />
                 </section>
 
+                <section className="space-y-2 border-b border-white/10 py-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-white/50">
+                    {t("aboutRepoTitle")}
+                  </h3>
+                  <p className="text-[11px] text-white/45">{t("aboutRepoLead")}</p>
+                  <p className="leading-snug">
+                    <a
+                      href="https://github.com/jorkiller9201-source/MANI"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#7ec8ff] underline decoration-white/25 underline-offset-2 hover:decoration-[#7ec8ff]"
+                    >
+                      {t("aboutRepoLink")}
+                    </a>
+                    <span className="ml-1 break-all text-[10px] text-white/35">
+                      https://github.com/jorkiller9201-source/MANI
+                    </span>
+                  </p>
+                </section>
+
+                <section className="space-y-2 border-b border-white/10 py-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-white/50">
+                    {t("aboutDeliverablesTitle")}
+                  </h3>
+                  <p className="leading-relaxed text-white/75">{t("aboutDeliverablesBody")}</p>
+                </section>
+
                 <section className="space-y-2 pt-3">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-white/50">
                     {t("aboutTeamTitle")}

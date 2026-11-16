@@ -36,6 +36,12 @@ const enBase: Dict = {
   aboutTeamAndre:
     "André Enoc Mejía — multi-year NASA Space Apps participant (People’s Choice Award 2023 and 2024), founder of Exoplanets Lab, Próspera ambassador, and Honduras STEM representative in NASA-linked forums.",
   aboutAndreIg: "Official Instagram — @astroandre_hn",
+  aboutRepoTitle: "Source code",
+  aboutRepoLead: "Open the public GitHub repository for MANI (team Nova 3):",
+  aboutRepoLink: "GitHub — jorkiller9201-source/MANI",
+  aboutDeliverablesTitle: "Hackathon deliverables",
+  aboutDeliverablesBody:
+    "André’s English pitch/demo video was completed on Sunday 15 November 2026 (evening, Tegucigalpa). Project page, SI declaration, and live demo are part of the Space Apps submission.",
   aboutSiNote:
     "In Space Apps 2026 we say Super Intelligence (SI), not “AI”. The SI tool used on this project is Cursor (cursor.com): assisted coding, debugging, and documentation only. The idea, scope, and verification of NASA numbers belong to the human team (see docs/SI_DECLARATION.md).",
   refHorizonsSystem: "NASA/JPL Horizons System (SSD)",
@@ -343,6 +349,12 @@ export const TRANSLATIONS: Record<LangCode, Dict> = {
     aboutTeamAndre:
       "André Enoc Mejía — trayectoria en el NASA Space Apps Challenge (People’s Choice Award 2023 y 2024), fundador de Exoplanets Lab, embajador de Próspera y representante de Honduras en espacios STEM vinculados a la NASA.",
     aboutAndreIg: "Instagram oficial — @astroandre_hn",
+    aboutRepoTitle: "Código fuente",
+    aboutRepoLead: "Abre el repositorio público de GitHub de MANI (equipo Nova 3):",
+    aboutRepoLink: "GitHub — jorkiller9201-source/MANI",
+    aboutDeliverablesTitle: "Entregables del hackathon",
+    aboutDeliverablesBody:
+      "El video de pitch/demo en inglés de André quedó completado el domingo 15 de noviembre de 2026 (tarde-noche, Tegucigalpa). La página del proyecto, la declaración de SI y la demo en vivo forman parte de la entrega Space Apps.",
     aboutSiNote:
       "En Space Apps 2026 se dice Super Inteligencia (SI), no “IA”. La herramienta de SI de este proyecto es Cursor (cursor.com): solo apoyo a código, depuración y documentación. La idea, el alcance y la verificación de los números NASA son del equipo humano (docs/SI_DECLARATION.md).",
     refHorizonsSystem: "Sistema NASA/JPL Horizons (SSD)",

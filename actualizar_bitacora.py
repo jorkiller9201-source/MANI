@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Bitácora Nova 3 — MANI, NASA Space Apps 2026."""
+"""Project log Nova 3 — MANI, NASA Space Apps 2026 (English)."""
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -139,7 +139,7 @@ def entry_table(doc, hora, titulo, contenido_bullets, resultado=None):
         rp = cell.add_paragraph()
         rp.paragraph_format.space_before = Pt(4)
         rp.paragraph_format.space_after = Pt(0)
-        add_text(rp, "Resultado: ", size=11, bold=True, color=NAVY)
+        add_text(rp, "Result: ", size=11, bold=True, color=NAVY)
         add_text(rp, resultado, size=11, color=INK)
 
     prevent_row_split(table.rows[0])
@@ -154,7 +154,7 @@ def footer(section):
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     add_text(
         p,
-        "Bitácora Nova 3  ·  MANI  ·  Lunar Landing Site Navigator  ·  NASA Space Apps 2026",
+        "Nova 3 Project Log  ·  MANI  ·  Lunar Landing Site Navigator  ·  NASA Space Apps 2026",
         size=9,
         color=MUTED,
     )
@@ -176,76 +176,73 @@ def main():
     normal.font.size = Pt(12)
     normal.font.color.rgb = INK
 
-    # Banner
     banner = doc.add_table(rows=1, cols=1)
     cell = banner.cell(0, 0)
     set_cell_shading(cell, "0B1F3A")
     set_cell_margins(cell, top=130, bottom=130, left=160, right=160)
     cell.paragraphs[0].clear()
     t = cell.paragraphs[0]
-    add_text(t, "BITÁCORA DEL PROYECTO MANI", size=22, bold=True, color=WHITE)
+    add_text(t, "MANI PROJECT LOG", size=22, bold=True, color=WHITE)
     sub = cell.add_paragraph()
     sub.paragraph_format.space_before = Pt(4)
     sub.paragraph_format.space_after = Pt(0)
-    add_text(sub, "Equipo Nova 3  ·  NASA Space Apps Challenge 2026", size=12, color=RGBColor(0xF2, 0xD2, 0x7A))
+    add_text(sub, "Team Nova 3  ·  NASA Space Apps Challenge 2026", size=12, color=RGBColor(0xF2, 0xD2, 0x7A))
     meta = cell.add_paragraph()
     meta.paragraph_format.space_before = Pt(2)
     meta.paragraph_format.space_after = Pt(0)
     add_text(
         meta,
-        "Sede: Chiminike, Tegucigalpa  ·  Patrocinio: Fundación Próspera  ·  14–15 de noviembre de 2026",
+        "Venue: Chiminike, Tegucigalpa  ·  Sponsor: Fundación Próspera  ·  14–15 November 2026",
         size=10,
         color=RGBColor(0xD6, 0xE2, 0xF0),
     )
 
-    # Nota aclaratoria
-    heading(doc, "Nota aclaratoria")
+    heading(doc, "Clarifying note")
     callout(
         doc,
         [
             (
-                "Esta bitácora documenta, hora por hora, cómo el equipo Nova 3 construye MANI durante el NASA Space Apps Challenge 2026.",
+                "This log documents, hour by hour, how team Nova 3 builds MANI during the NASA Space Apps Challenge 2026.",
                 {"size": 11, "color": NAVY},
             ),
             (
-                "Herramienta principal de trabajo. Usamos Cursor como entorno de desarrollo asistido. La Super Inteligencia (SI) es solo una herramienta de apoyo: nos ayuda a organizar, consultar datos, escribir código y documentar más rápido. Las decisiones técnicas, la revisión de resultados, la validez científica y la responsabilidad del proyecto son del equipo humano. En Space Apps 2026 y en este proyecto se usa el término SI, no “IA”.",
+                "Primary work tool. We use Cursor as the assisted development environment. Super Intelligence (SI) is support only: it helps us organize, look up data, write code, and document faster. Technical decisions, review of results, scientific validity, and project responsibility belong to the human team. In Space Apps 2026 and in this project we say SI, not “AI”.",
                 {"size": 11, "color": NAVY},
             ),
             (
-                "Líder del equipo. Jorge Alberto Gutiérrez Canales, Ingeniero Militar en Mecatrónica, Capitán de la Fuerza Aérea Hondureña, pasante de la Maestría en Inteligencia Artificial y Analítica de Datos (formación en SI) en la Universidad Internacional de La Rioja (UNIR, España), con formación complementaria en análisis de datos (PSU en Data Analytics). Dirige el cálculo, los datos citados de la NASA y la construcción de la aplicación.",
+                "Team leader. Jorge Alberto Gutiérrez Canales, Military Mechatronics Engineer, Captain in the Honduran Air Force, master’s candidate in Artificial Intelligence and Data Analytics (SI-focused graduate study) at Universidad Internacional de La Rioja (UNIR, Spain), with complementary data analytics training (PSU Data Analytics). He leads the calculations, cited NASA data, and building the application.",
                 {"size": 11, "color": NAVY},
             ),
             (
-                "André Enoc Mejía. Hijo putativo de Jorge. Tiene trayectoria propia en el NASA Space Apps Challenge (Participación en varias ediciones; People’s Choice Award en 2023 y 2024), fundó Exoplanets Lab, es embajador de Próspera y ha representado a Honduras en espacios STEM vinculados a la NASA. En Nova 3 es responsable del video en inglés, del texto de la ficha del proyecto y de la apertura del pitch. La misión de Jorge con André es que siga aprendiendo: que cada reto le enseñe a explicar una decisión técnica con claridad y a trabajar en equipo.",
+                "André Enoc Mejía. Jorge’s putative son. He has his own NASA Space Apps Challenge track record (multi-year participation; People’s Choice Award in 2023 and 2024), founded Exoplanets Lab, is a Próspera ambassador, and has represented Honduras in NASA-linked STEM forums. In Nova 3 he owns the English video, the project-page text, and the pitch opening. Jorge’s mission with André is that he keeps learning: each challenge should teach him to explain a technical decision clearly and to work as a team.",
                 {"size": 11, "color": NAVY},
             ),
             (
-                "Lissa Paola Mejía Romero. Mamá de André Enoc Mejía e Ingeniera Industrial. En Nova 3 brinda apoyo y dirección a André, y se encarga del manejo de redes sociales y de la divulgación de los avances del proyecto durante el hackathon.",
+                "Lissa Paola Mejía Romero. André Enoc Mejía’s mother and Industrial Engineer. In Nova 3 she supports and guides André, and handles social media and outreach for project progress during the hackathon.",
                 {"size": 11, "color": NAVY},
             ),
             (
-                "Jorge Alberto Gutiérrez Mejía. Hijo de Jorge, de 7 años. Se integra al equipo para que, desde su corta edad, vea cómo un proyecto se desarrolla desde cero: el problema, el plan, el trabajo por horas, el ensayo y la entrega. No se le pide producir código; se le invita a observar, preguntar y entender el proceso.",
+                "Jorge Alberto Gutiérrez Mejía. Jorge’s son, age 7. He joins the team so that, from an early age, he can see how a project is built from scratch: the problem, the plan, hour-by-hour work, rehearsal, and delivery. He is not asked to produce code; he is invited to observe, ask questions, and understand the process.",
                 {"size": 11, "color": NAVY},
             ),
             (
-                "Desafío oficial: Lunar Landing Site Navigator (programa CLPS). Producto: MANI, comparador de sitios y fechas de alunizaje en el polo sur lunar.",
+                "Official challenge: Lunar Landing Site Navigator (CLPS program). Product: MANI, a south-pole landing-site and date comparator.",
                 {"size": 11, "bold": True, "color": NAVY},
             ),
         ],
         fill="FFF8E7",
     )
 
-    heading(doc, "Cómo se actualiza esta bitácora")
+    heading(doc, "How this log is updated")
     body(
         doc,
-        "Se escribe en paralelo al desarrollo, por franjas horarias (hora de Tegucigalpa). Solo se registra lo relevante del proyecto: qué avanzó el equipo, qué quedó listo y qué decisión importa. No se documentan instrucciones internas a herramientas de software ni detalles sin valor para el relato del hackathon.",
+        "It is written in parallel with development, by time blocks (Tegucigalpa local time). Only project-relevant progress is recorded: what the team advanced, what is ready, and which decisions matter. Internal tooling instructions and low-value technical noise are omitted.",
     )
 
-    # Sábado
-    heading(doc, "Sábado 14 de noviembre de 2026 — Chiminike, Tegucigalpa")
+    heading(doc, "Saturday 14 November 2026 — Chiminike, Tegucigalpa")
     body(
         doc,
-        "Inicio del hackathon. Sede local con apoyo de Fundación Próspera.",
+        "Hackathon start. Local venue with support from Fundación Próspera.",
         italic=True,
         color=MUTED,
         space_after=10,
@@ -254,596 +251,644 @@ def main():
     entry_table(
         doc,
         "09:00",
-        "Lectura del reto y recursos",
+        "Challenge brief and resources",
         [
-            "Se revisa el desafío Lunar Landing Site Navigator y sus recursos oficiales.",
-            "Se confirma el uso de JPL Horizons para el cálculo de Sol y Tierra; Quickmap y Moon Trek para el terreno.",
-            "Se valida que la red del venue permite consultar Horizons.",
+            "Review of the Lunar Landing Site Navigator challenge and its official resources.",
+            "Confirm JPL Horizons for Sun/Earth calculations; Quickmap and Moon Trek for terrain.",
+            "Confirm venue network can reach Horizons.",
         ],
-        resultado="Alcance del sábado: comparar seis sitios del polo sur con números reales de energía y comunicación.",
+        resultado="Saturday scope: compare six south-pole sites with real power and communications numbers.",
     )
 
     entry_table(
         doc,
         "09:25",
-        "Apertura de la bitácora",
+        "Opening this project log",
         [
-            "Se abre esta bitácora para documentar el proceso del equipo durante el hackathon.",
-            "Se deja la nota aclaratoria sobre el equipo, el rol de la Super Inteligencia (SI) como apoyo y el uso de Cursor.",
+            "Open this log to document the team’s process during the hackathon.",
+            "Leave the clarifying note on the team, Super Intelligence (SI) as support, and Cursor.",
         ],
-        resultado="Bitácora en marcha, en paralelo al desarrollo de MANI.",
+        resultado="Project log running in parallel with MANI development.",
     )
 
     entry_table(
         doc,
         "09:31",
-        "Incorporación de Lissa Paola Mejía Romero",
+        "Lissa Paola Mejía Romero joins",
         [
-            "Se agrega a Lissa Paola Mejía Romero, mamá de André e Ingeniera Industrial.",
-            "Su rol: apoyo y dirección de André, redes sociales y divulgación de avances.",
+            "Add Lissa Paola Mejía Romero, André’s mother and Industrial Engineer.",
+            "Her role: support and guidance for André, social media, and outreach.",
         ],
-        resultado="Equipo: Jorge (líder técnico), André (video y pitch), Lissa (apoyo, redes y divulgación) y Jorge Alberto Gutiérrez Mejía (7 años, aprendizaje del proceso).",
+        resultado="Team: Jorge (technical lead), André (video and pitch), Lissa (support, networks, outreach), and Jorge Alberto Gutiérrez Mejía (7, learning the process).",
     )
 
     entry_table(
         doc,
         "09:53",
-        "Ajuste del tono de la bitácora",
+        "Tone of the project log",
         [
-            "Se acuerda escribir de forma más general: avances y decisiones del proyecto, sin detalle interno innecesario.",
+            "Agree to write more generally: project progress and decisions, without unnecessary internal detail.",
         ],
-        resultado="La bitácora queda como relato del equipo, no como diario técnico de herramientas.",
+        resultado="The log stays a team narrative, not a tooling diary.",
     )
 
     entry_table(
         doc,
         "09:56",
-        "Criterios de evaluación y uso de SI",
+        "Evaluation criteria and SI use",
         [
-            "Se incorporan al proyecto los criterios locales: impacto, creatividad, validez, relevancia y presentación.",
-            "Se fijan las reglas de uso de SI: acelerar trabajo (código, documentación, prototipos), no reemplazar la idea ni presentar resultados sin verificar datos.",
-            "Entrega: página en inglés, demo breve y declaración del uso de SI.",
+            "Bring local criteria into the project: impact, creativity, validity, relevance, and presentation.",
+            "Set SI use rules: accelerate work (code, docs, prototypes); do not replace the idea or show unverified results.",
+            "Delivery: English project page, short demo, and SI-use declaration.",
         ],
-        resultado="MANI se construye con datos NASA como núcleo y con SI solo como apoyo declarado.",
+        resultado="MANI is built with NASA data as the core and SI only as declared support.",
     )
 
     entry_table(
         doc,
         "09:59",
-        "Terminología: Super Inteligencia (SI)",
+        "Terminology: Super Intelligence (SI)",
         [
-            "Se acuerda referirse siempre a la Super Inteligencia (SI), no como “IA”, en bitácora, reglas, ficha y presentación.",
+            "Agree to always say Super Intelligence (SI), not “AI”, in the log, rules, project sheet, and presentation.",
         ],
-        resultado="El lenguaje del proyecto queda alineado con Space Apps 2026.",
+        resultado="Project language aligned with Space Apps 2026.",
     )
 
     entry_table(
         doc,
         "10:07",
-        "Plan actualizado con recursos oficiales",
+        "Plan updated with official resources",
         [
-            "Se incorporan al plan los recursos del reto: Horizons (núcleo del cálculo), Quickmap, Moon Trek y el portal lunar de la CSA.",
-            "Queda claro qué recurso da números y cuál solo aporta contexto o terreno.",
+            "Add challenge resources to the plan: Horizons (calculation core), Quickmap, Moon Trek, and the CSA lunar portal.",
+            "Clear which resource supplies numbers versus terrain or context only.",
         ],
-        resultado="El plan del equipo y el plan para André ya citan las fuentes oficiales de Space Apps.",
+        resultado="Team plan and André’s plan already cite Space Apps official sources.",
     )
 
     entry_table(
         doc,
         "10:12 – 10:25",
-        "Arquitectura web MANI",
+        "MANI web architecture",
         [
-            "Se define la app web con registro mundial, seguridad al estilo Heimdall y dominio Oracle.",
-            "Puertos: frontend 3100, API 8100, HTTPS público 9543.",
-            "Mapa 3D lunar (Cesium + Moon Trek) en lugar del mapa terrestre de SKADI.",
+            "Define the web app with worldwide registration, Heimdall-style security, and Oracle domain.",
+            "Ports: frontend 3100, API 8100, public HTTPS 9543.",
+            "3D lunar map (Cesium + Moon Trek) instead of SKADI’s Earth map.",
         ],
-        resultado="Plan de arquitectura listo para construir.",
+        resultado="Architecture plan ready to build.",
     )
 
     entry_table(
         doc,
         "10:25 – 11:00",
-        "Construcción de la aplicación",
+        "Building the application",
         [
-            "Backend FastAPI con registro, login, sitios y comparación Horizons.",
-            "Datos de Sol y Tierra precargados para los seis sitios del polo sur.",
-            "Frontend Next.js con mapa 3D lunar, comparación e informe en inglés.",
-            "Configuración Caddy :9543 y declaración de uso de SI.",
+            "FastAPI backend with register, login, sites, and Horizons comparison.",
+            "Sun and Earth data preloaded for the six south-pole sites.",
+            "Next.js frontend with 3D lunar map, comparison, and English report.",
+            "Caddy :9543 setup and SI-use declaration.",
         ],
-        resultado="MANI operable en local (:3100 / :8100) con datos NASA como núcleo.",
+        resultado="MANI operable locally (:3100 / :8100) with NASA data as the core.",
     )
 
     entry_table(
         doc,
         "10:49",
-        "Corrección del mapa 3D lunar",
+        "3D lunar map fix",
         [
-            "Se corrige el elipsoide lunar al crear el globo Cesium (ya no se asigna después).",
-            "Las tiles de Moon Trek pasan por proxy local para cargar en el navegador.",
+            "Fix the lunar ellipsoid when creating the Cesium globe (no longer assigned after the fact).",
+            "Moon Trek tiles go through a local proxy so the browser can load them.",
         ],
-        resultado="El visor lunar deja de fallar y muestra el polo sur con marcadores.",
+        resultado="Lunar viewer stops failing and shows the south pole with markers.",
     )
 
     entry_table(
         doc,
         "10:58",
-        "Mapa 3D lunar visible",
+        "3D lunar map visible",
         [
-            "Cesium se carga desde archivos locales; tiles LRO WAC de Moon Trek por proxy.",
-            "Se ajusta la cámara para mostrar el disco lunar y acercarse al polo sur.",
+            "Cesium loads from local files; LRO WAC Moon Trek tiles via proxy.",
+            "Camera adjusted to show the lunar disk and approach the south pole.",
         ],
-        resultado="El globo lunar se ve en la app; se puede orbitar con el mouse.",
+        resultado="Lunar globe visible in the app; mouse orbit works.",
     )
 
     entry_table(
         doc,
         "11:17",
-        "Selector de idioma (12 idiomas)",
+        "Language selector (12 languages)",
         [
-            "Se coloca un selector de idioma a la izquierda de Cerrar sesión.",
-            "Quedan disponibles los doce idiomas principales; la interfaz y el informe de una página se traducen según la elección.",
-            "El idioma se recuerda en el navegador para la siguiente visita.",
+            "Place a language selector left of Log out.",
+            "Twelve main languages available; UI and one-page report follow the choice.",
+            "Language remembered in the browser for the next visit.",
         ],
-        resultado="MANI puede presentarse en varios idiomas, incluido el informe de comparación.",
+        resultado="MANI can be presented in several languages, including the comparison report.",
     )
 
     entry_table(
         doc,
         "13:05",
-        "Ubicación geográfica en el cruce y Acerca de",
+        "Geographic location in the compare and About",
         [
-            "La latitud y longitud selenográfica de cada sitio seleccionado pasan a formar parte de la comparación y del informe.",
-            "Se cruza el punto geográfico con la efeméride de Horizons usada para Sol y Tierra.",
-            "Se agrega el botón Acerca de junto al idioma: explica los cálculos, el propósito CLPS y al equipo Nova 3.",
+            "Selenographic lat/lon of each selected site become part of the comparison and report.",
+            "Cross the geographic point with the Horizons ephemeris used for Sun and Earth.",
+            "Add About next to language: explains calculations, CLPS purpose, and team Nova 3.",
         ],
-        resultado="La decisión A/B queda anclada a coordenadas reales; el público puede leer cómo y por qué se calcula.",
+        resultado="A/B decision anchored to real coordinates; visitors can read how and why it is calculated.",
     )
 
     entry_table(
         doc,
         "13:12",
-        "Referencias oficiales en Acerca de",
+        "Official references in About",
         [
-            "Se documentan en la app los enlaces oficiales de Horizons (SSD), la API HTTP, Moon Trek, CLPS y Space Apps.",
-            "Se listan las APIs usadas y Cursor como herramienta de Super Inteligencia (SI) del proyecto.",
-            "Se aclara que la puntuación 0–100 es heurística del equipo; las elevaciones vienen de Horizons.",
+            "Document official Horizons (SSD), HTTP API, Moon Trek, CLPS, and Space Apps links in the app.",
+            "List APIs used and Cursor as the project’s Super Intelligence (SI) tool.",
+            "Clarify that the 0–100 score is a team heuristic; elevations come from Horizons.",
         ],
-        resultado="Cualquier jurado o visitante puede verificar método, fuentes y uso de SI desde el botón Acerca de.",
+        resultado="Any judge or visitor can verify method, sources, and SI use from About.",
     )
 
     entry_table(
         doc,
         "13:21",
-        "Horizonte topográfico LOLA en el cruce",
+        "LOLA topographic horizon in the compare",
         [
-            "Se incorporan máscaras de horizonte 360° a partir del DEM polar LOLA LDEM_75S_240M (PDS) para los seis sitios.",
-            "La comparación cuenta horas de Sol y Tierra que despejan el relieve, no solo el horizonte plano de Horizons.",
-            "La puntuación principal usa el despeje topográfico; las horas geométricas quedan visibles para contrastar.",
+            "Add 360° horizon masks from the LOLA polar DEM LDEM_75S_240M (PDS) for the six sites.",
+            "Comparison counts Sun and Earth hours that clear the terrain, not only Horizons’ flat horizon.",
+            "Primary score uses topographic clearing; geometric hours remain visible for contrast.",
         ],
-        resultado="MANI responde la pregunta CLPS con relieve real en los sitios curados; el punto arbitrario sigue fuera de alcance.",
+        resultado="MANI answers the CLPS question with real relief at curated sites; arbitrary points still out of scope.",
     )
 
     entry_table(
         doc,
         "13:30",
-        "Puntos arbitrarios con dos clics",
+        "Arbitrary points with two clicks",
         [
-            "En el globo, el primer clic fija el punto A y el segundo el B (también se pueden usar marcadores del catálogo).",
-            "Para puntos libres se consulta Horizons en vivo y se calcula la máscara LOLA al vuelo (cobertura ~75°S–90°S).",
-            "La comparación y el informe incluyen lat/lon del punto elegido y horas geométricas vs topográficas.",
+            "On the globe, first click sets point A and second sets B (catalog markers still work).",
+            "Free points query live Horizons and compute the LOLA mask on the fly (~75°S–90°S coverage).",
+            "Comparison and report include chosen lat/lon and geometric vs topographic hours.",
         ],
-        resultado="El planificador puede contrastar cualquier par de lugares del polo sur dentro de la cobertura LOLA del DEM.",
+        resultado="Planners can contrast any south-pole pair within the DEM’s LOLA coverage.",
     )
 
     entry_table(
         doc,
         "14:28",
-        "Exportación de informe e historial por cuenta",
+        "Report export and per-account history",
         [
-            "Se agrega exportación gráfica del informe con logo MANI, hora de consulta y hora de impresión.",
-            "Cada exportación se guarda en el historial de la cuenta del usuario para reabrir o reimprimir.",
+            "Add graphic report export with MANI logo, query time, and print time.",
+            "Each export is saved to the user’s account history to reopen or reprint.",
         ],
-        resultado="La entrega deja evidencia trazable de cada comparación realizada en la sesión.",
+        resultado="Delivery leaves a traceable record of each comparison in the session.",
     )
 
     entry_table(
         doc,
         "14:41",
-        "Informe imprimible y Anexo A con mapa",
+        "Printable report and Annex A with map",
         [
-            "La impresión del informe pasa a fondo blanco, pensada para papel.",
-            "La ventana de análisis se etiqueta con Desde y Hasta en UTC.",
-            "Al final del informe se agrega el Anexo A: captura del globo Moon Trek con los puntos A y B marcados, guardada también en el historial.",
+            "Report print path moves to a white background for paper.",
+            "Analysis window labeled From and To in UTC.",
+            "Annex A at the end: Moon Trek globe capture with A and B marked, also stored in history.",
         ],
-        resultado="El informe exportado queda listo para imprimir o PDF con mapa de sitios incluido.",
+        resultado="Exported report ready to print or PDF with site map included.",
     )
 
     entry_table(
         doc,
         "14:55",
-        "Sol y Tierra en el globo con hora UTC",
+        "Sun and Earth on the globe with UTC time",
         [
-            "En la pantalla principal se muestran Sol y Tierra según Horizons (acimut/elevación) desde el sitio activo A o B.",
-            "Hay un control de fecha y hora UTC para ver cómo quedan respecto al horizonte en ese instante.",
+            "Main screen shows Sun and Earth from Horizons (azimuth/elevation) at active site A or B.",
+            "UTC date/time control to see how they sit relative to the horizon at that instant.",
         ],
-        resultado="El planificador puede visualizar energía solar y visibilidad de Tierra en el mapa, no solo en el informe.",
+        resultado="Planners can visualize solar power and Earth visibility on the map, not only in the report.",
     )
 
     entry_table(
         doc,
         "15:11",
-        "Cielo nativo Cesium (Sol, Tierra, estrellas)",
+        "Native Cesium sky (Sun, Earth, stars)",
         [
-            "Se deja el enfoque de discos improvisados y se usa la API de Cesium: SkyBox, Sun y EllipsoidPrimitive.",
-            "Las posiciones salen de Simon1994PlanetaryPositions transformadas al marco lunar (mismo criterio que el Moon nativo de Cesium).",
-            "Horizons sigue alimentando el panel de elevación del sitio; el fondo espacial queda a cargo de Cesium.",
+            "Drop improvised disks and use Cesium APIs: SkyBox, Sun, and EllipsoidPrimitive.",
+            "Positions from Simon1994PlanetaryPositions transformed into the lunar frame (same idea as Cesium’s native Moon).",
+            "Horizons still feeds the site elevation panel; the space backdrop is Cesium’s job.",
         ],
-        resultado="Sol, Tierra y estrellas se ven con el pipeline gráfico de Cesium, alineado a la hora UTC del cielo.",
+        resultado="Sun, Earth, and stars render with Cesium’s graphics pipeline, aligned to UTC sky time.",
     )
 
     entry_table(
         doc,
         "16:45",
-        "Líneas de tiempo diarias en el informe",
+        "Daily timelines in the report",
         [
-            "El informe exportable incluye dos gráficas (opción A y B) entre Desde y Hasta.",
-            "Cada día en UTC: raya amarilla = horas de Sol con despeje topográfico LOLA; azul = horas de Tierra con el mismo criterio que la puntuación.",
-            "Los datos agregan muestras Horizons (paso 1 h) filtradas a la ventana de análisis.",
+            "Exportable report includes two charts (option A and B) between From and To.",
+            "Each UTC day: yellow bar = Sun hours with LOLA topographic clearing; blue = Earth hours under the same score rule.",
+            "Data aggregates Horizons samples (1 h step) filtered to the analysis window.",
         ],
-        resultado="La comparación se lee día a día en pantalla e impresión, con números verificables contra Horizons.",
+        resultado="Day-by-day comparison readable on screen and in print, with numbers checkable against Horizons.",
     )
 
     entry_table(
         doc,
         "16:50",
-        "Líneas de tiempo en la pantalla principal",
+        "Timelines on the main screen",
         [
-            "Tras comparar, las mismas gráficas A/B (Sol amarillo, Tierra azul) aparecen junto a las métricas, no solo al exportar.",
-            "Usan daily_timeline de la respuesta /compare y la ventana Desde–Hasta visible bajo el título.",
+            "After compare, the same A/B charts (yellow Sun, blue Earth) appear next to metrics, not only on export.",
+            "They use daily_timeline from the /compare response and the From–To window under the title.",
         ],
-        resultado="El flujo principal de MANI muestra la evolución diaria sin abrir el informe.",
+        resultado="MANI’s main flow shows daily evolution without opening the report.",
     )
 
     entry_table(
         doc,
         "22:25",
-        "Compare sin resultados fuera de Horizons",
+        "Compare with no results outside Horizons",
         [
-            "La ventana pedida (p. ej. diciembre 2026–noviembre 2027) no coincidía con el cache embebido (15–29 nov 2026) y /compare devolvía cero muestras sin aviso.",
-            "El backend recorta la ventana al rango Horizons offline de sitios curados o devuelve error bilingüe con el Desde–Hasta válido.",
-            "En la UI se muestra el rango embebido y un aviso si la ventana se ajusta automáticamente.",
+            "Requested window (e.g. Dec 2026–Nov 2027) did not match the embedded cache (15–29 Nov 2026) and /compare returned zero samples silently.",
+            "Backend clips the window to the offline Horizons range for curated sites or returns a bilingual error with the valid From–To.",
+            "UI shows the embedded range and a notice if the window is adjusted automatically.",
         ],
-        resultado="Shackleton vs Malapert con fechas dentro de nov 2026 entrega horas, puntuación y líneas de tiempo sin depender de internet.",
+        resultado="Shackleton vs Malapert with dates inside Nov 2026 returns hours, score, and timelines without internet.",
     )
 
     entry_table(
         doc,
         "22:32",
-        "Horizons en vivo con internet",
+        "Live Horizons with internet",
         [
-            "Con red, /compare pide JPL Horizons para cualquier ventana (p. ej. 15–20 dic 2026); sin red, solo la caché embebida o error bilingüe pidiendo conexión.",
-            "La caché de catálogo se usa solo si cubre por completo las fechas pedidas; ya no se fuerza noviembre 2026 cuando hay internet.",
-            "La UI distingue hint offline vs online y muestra el mensaje de conexión de forma visible.",
+            "With network, /compare asks JPL Horizons for any window (e.g. 15–20 Dec 2026); offline, only the embedded cache or a bilingual error asking for connection.",
+            "Catalog cache is used only if it fully covers requested dates; November 2026 is no longer forced when online.",
+            "UI distinguishes offline vs online hints and shows the connection message clearly.",
         ],
-        resultado="Demo offline intacta en nov 2026; con internet el equipo ya no queda limitado al JSON embebido.",
+        resultado="Offline demo intact for Nov 2026; with internet the team is no longer limited to embedded JSON.",
     )
 
     entry_table(
         doc,
         "22:52",
-        "Agregar sitio (coordenadas A/B)",
+        "Add site (A/B coordinates)",
         [
-            "Panel «Agregar sitio» en la barra lateral, debajo de Ir a sitio A/B: entradas lat/lon y botón para usar el último clic en el globo.",
-            "El nombre mostrado del punto personalizado es la coordenada con cuatro decimales (p. ej. −89.5000°, 12.3000°) en selector, compare, informe y marcador.",
+            "“Add site” panel in the sidebar under Go to site A/B: lat/lon inputs and a button to use the last globe click.",
+            "Custom-point display name is the coordinate to four decimals (e.g. −89.5000°, 12.3000°) in selector, compare, report, and marker.",
         ],
-        resultado="Se puede comparar un sitio curado contra coordenadas arbitrarias sin romper Horizons en vivo ni el flujo de clic en el mapa.",
+        resultado="Compare a curated site against arbitrary coordinates without breaking live Horizons or map-click flow.",
     )
 
     entry_table(
         doc,
         "23:10",
-        "Clic simple en el globo (ranura A/B)",
+        "Single click on the globe (A/B slot)",
         [
-            "El clic en superficie esperaba 280 ms y un segundo toque en esa ventana cancelaba la asignación y solo precargaba «Agregar sitio».",
-            "Clic simple actualiza de inmediato la ranura activa; doble clic sigue rellenando lat/lon en el panel.",
-            "Respaldo pickEllipsoid si el rayo no intersecta el terreno; pickTarget estable con ref en la página.",
+            "Surface click waited 280 ms and a second tap in that window cancelled assignment and only prefilled Add site.",
+            "Single click updates the active slot immediately; double-click still fills lat/lon in the panel.",
+            "pickEllipsoid fallback if the ray misses terrain; stable pickTarget with a page ref.",
         ],
-        resultado="Un solo clic en la Luna mueve el pin A o B al instante sin depender del debounce.",
+        resultado="One click on the Moon moves pin A or B instantly without debounce delay.",
     )
 
     entry_table(
         doc,
         "23:25",
-        "Globo lunar estable en Cesium",
+        "Stable lunar globe in Cesium",
         [
-            "A veces la Luna desaparecía del mapa: el zoom con rueda podía alejar la cámara cientos de megámetros y el disco quedaba fuera de escena.",
-            "Se limita el zoom máximo al mismo rango que la órbita manual y se reajusta la cámara en cada cuadro si se sale de banda.",
-            "Recuperación ante error de render y contexto WebGL: globo e imágenes visibles, Sol nativo apagado, resize del contenedor.",
+            "Sometimes the Moon vanished: wheel zoom could push the camera hundreds of megameters and the disk left the scene.",
+            "Cap max zoom to the same range as manual orbit and re-clamp the camera each frame if it leaves the band.",
+            "Recovery on render/WebGL errors: globe and imagery visible, native Sun off, container resize.",
         ],
-        resultado="El globo lunar se mantiene visible al navegar, hacer zoom y recuperarse de fallos puntuales del visor.",
+        resultado="Lunar globe stays visible while navigating, zooming, and recovering from occasional viewer faults.",
     )
 
     entry_table(
         doc,
         "23:53",
-        "Reimprimir informes en otro idioma",
+        "Reprint reports in another language",
         [
-            "En «Mis informes», al reabrir un export guardado aparece el selector «Idioma del informe» (mismos idiomas de la app).",
-            "La vista previa y el PDF usan textos i18n del idioma elegido; los números siguen siendo los de la comparación guardada.",
-            "El botón pasa a «Imprimir / PDF» sin duplicar entradas en el historial.",
+            "In My reports, reopening a saved export shows Report language (same languages as the app).",
+            "Preview and PDF use i18n strings for the chosen language; numbers stay from the saved comparison.",
+            "Button becomes Print / PDF without duplicating history entries.",
         ],
-        resultado="El equipo puede reimprimir un informe en inglés o español (u otro idioma) sin volver a comparar sitios.",
+        resultado="Team can reprint a report in English or Spanish (or another language) without re-comparing sites.",
     )
 
     entry_table(
         doc,
         "23:57",
-        "Anexo A: imagen del globo en el informe",
+        "Annex A: globe image in the report",
         [
-            "El Anexo A mostraba un rectángulo negro con solo las etiquetas A/B: al copiar el canvas WebGL de Cesium el búfer ya estaba borrado.",
-            "Se activa preserveDrawingBuffer en el visor, se esperan teselas y cuadros postRender, y se reintenta si el recorte sale vacío.",
-            "Desde historial: si la imagen guardada está en negro, se vuelve a capturar del mapa vivo; el idioma del informe ya no fuerza una nueva captura.",
+            "Annex A showed a black rectangle with only A/B labels: copying Cesium’s WebGL canvas after the buffer was cleared.",
+            "Enable preserveDrawingBuffer, wait for tiles and postRender frames, and retry if the crop is empty.",
+            "From history: if the saved image is black, recapture from the live map; report language no longer forces a new capture.",
         ],
-        resultado="La vista previa y el PDF muestran el globo Moon Trek con los puntos A y B enmarcados.",
+        resultado="Preview and PDF show the Moon Trek globe with A and B framed.",
+    )
+
+    heading(doc, "Saturday closing criterion")
+    callout(
+        doc,
+        [
+            (
+                "Saturday succeeds if two places can be selected, Sun and Earth hours are visible, André can say in English which wins and why, and the app opens without internet for the comparison.",
+                {"size": 11, "bold": True, "color": NAVY},
+            ),
+        ],
+        fill="E7F6EE",
+    )
+
+    heading(doc, "Sunday 15 November 2026 — Chiminike, Tegucigalpa")
+    body(
+        doc,
+        "Second hackathon day. Overnight and daytime build continues; evening closes presentation deliverables.",
+        italic=True,
+        color=MUTED,
+        space_after=10,
     )
 
     entry_table(
         doc,
         "00:20",
-        "Recuperación de contraseña",
+        "Password recovery",
         [
-            "En login: enlace «¿Olvidaste tu contraseña?» hacia formulario de correo (ES/EN).",
-            "API POST /auth/forgot-password con límite 3/min; correo no registrado devuelve mensaje claro.",
-            "Si el usuario existe: contraseña temporal por bcrypt, envío SMTP o log en desarrollo sin SMTP.",
+            "On login: Forgot your password? link to an email form (ES/EN).",
+            "API POST /auth/forgot-password rate-limited 3/min; unknown email returns a clear message.",
+            "If the user exists: temporary bcrypt password, SMTP send or development log when SMTP is off.",
         ],
-        resultado="Planners pueden restablecer acceso sin soporte manual cuando el correo y SMTP están listos.",
+        resultado="Planners can reset access without manual support when email and SMTP are ready.",
     )
 
     entry_table(
         doc,
         "00:05",
-        "Anexo A fijo en Mis informes",
+        "Annex A fixed in My reports",
         [
-            "Al guardar el informe se valida el JPEG del globo y se persiste en el historial; al reimprimir o cambiar idioma solo se reutiliza esa imagen.",
-            "Informes viejos sin foto o en negro: un solo intento de captura con el mapa vivo, actualización del registro y mensaje claro si el globo no está abierto.",
+            "On save, validate the globe JPEG and persist it in history; reprint or language change only reuses that image.",
+            "Older reports without a photo or black: one live-map capture attempt, record update, and a clear message if the globe is not open.",
         ],
-        resultado="El Anexo A no depende del idioma y deja de verse en negro en informes ya guardados.",
+        resultado="Annex A no longer depends on language and stops appearing black in already-saved reports.",
     )
 
     entry_table(
         doc,
         "00:55",
-        "MANI público en Azure",
+        "MANI public on Azure",
         [
-            "Se elige Microsoft Azure entre las Global Offers (el trial de Google Cloud ya estaba usado en la cuenta del equipo).",
-            "MANI queda publicado en Azure Container Apps: frontend, API y datos Horizons embebidos en una sola URL HTTPS.",
-            "Health y página principal responden; la API exige login como en local.",
+            "Choose Microsoft Azure among Global Offers (Google Cloud trial already used on the team account).",
+            "MANI published on Azure Container Apps: frontend, API, and embedded Horizons data on one HTTPS URL.",
+            "Health and home respond; API requires login as in local.",
         ],
-        resultado="Demo pública en https://mani-web.ashysky-26ab9584.eastus.azurecontainerapps.io para jueces y ficha del proyecto.",
+        resultado="Public demo at https://mani-web.ashysky-26ab9584.eastus.azurecontainerapps.io for judges and the project page.",
     )
 
     entry_table(
         doc,
         "02:30",
-        "Recuperación de contraseña por correo",
+        "Password recovery by email",
         [
-            "El flujo forgot-password ya genera contraseña temporal; se prepara el envío SMTP automático.",
-            "Hotmail/Outlook rechaza SMTP básico en la cuenta del equipo; se deja listo el camino con Gmail App Password.",
-            "Si el correo falla, la contraseña de la cuenta ya no se cambia (evita dejar al usuario sin acceso).",
+            "Forgot-password already creates a temporary password; prepare automatic SMTP send.",
+            "Hotmail/Outlook rejects basic SMTP on the team account; leave the Gmail App Password path ready.",
+            "If email fails, the account password is no longer changed (avoids locking the user out).",
         ],
-        resultado="SMTP Gmail activo en Azure; forgot-password envía contraseña temporal al correo del usuario registrado.",
+        resultado="Gmail SMTP active on Azure; forgot-password emails a temporary password to the registered user.",
     )
 
     entry_table(
         doc,
         "02:45",
-        "Cambio obligatorio tras contraseña temporal",
+        "Mandatory change after temporary password",
         [
-            "Tras recuperar acceso, el login con la clave temporal abre una pantalla para definir una contraseña nueva.",
-            "Hasta guardar la nueva clave no se entra a la app; la temporal deja de servir como definitiva.",
+            "After recovery, login with the temporary key opens a screen to set a new password.",
+            "Until the new password is saved, the app is blocked; the temporary key is not treated as final.",
         ],
-        resultado="Flujo de recuperación: correo temporal → login → elegir contraseña nueva → MANI.",
+        resultado="Recovery flow: temporary email → login → choose new password → MANI.",
     )
 
     entry_table(
         doc,
         "03:25",
-        "APK Android conectada a Azure",
+        "Android APK connected to Azure",
         [
-            "Se genera una APK WebView que abre solo la URL pública de MANI en Azure.",
-            "Caché agresiva (largeHeap, DOM storage, HTTP cache; la app no borra el caché).",
-            "En la página de inicio y en la app hay descarga de la APK.",
+            "Build a WebView APK that opens only MANI’s public Azure URL.",
+            "Aggressive cache (largeHeap, DOM storage, HTTP cache; app does not clear cache).",
+            "APK download on the home page and in the app.",
         ],
-        resultado="Jueces y equipo pueden instalar MANI en Android desde el sitio web.",
+        resultado="Judges and team can install MANI on Android from the website.",
     )
 
     entry_table(
         doc,
         "10:50",
-        "Verificación del guardado de contraseña nueva",
+        "Verify new-password save",
         [
-            "Se revisa el flujo recuperar → temporal → login → contraseña nueva: el hash sí se guarda en la base local.",
-            "El correo de recuperación apuntaba a Azure aunque el reset se hiciera en local; ahora el enlace usa el mismo sitio desde el que se pidió.",
-            "Tras guardar la nueva clave se emite sesión nueva y se confirma que ya no pide cambio forzado.",
+            "Review recover → temporary → login → new password: hash is saved in the local database.",
+            "Recovery email pointed at Azure even when reset was local; link now uses the same site that requested it.",
+            "After saving the new password, a fresh session is issued and forced change no longer appears.",
         ],
-        resultado="Cambio de contraseña verificado en local; conviene pedir el reset y entrar siempre en el mismo sitio (local o Azure).",
+        resultado="Password change verified locally; request reset and sign in on the same site (local or Azure).",
     )
 
     entry_table(
         doc,
         "11:00",
-        "Dominio corto hacia Azure (DuckDNS)",
+        "Short domain to Azure (DuckDNS)",
         [
-            "GoDaddy/Porkbun no se pudo reclamar (OTP); se pasa al plan B: DuckDNS gratis apuntando a Container Apps.",
-            "Jorge crea mani-nova3.duckdns.org a mano; Azure enlaza hostname, certificado HTTPS y CORS/PUBLIC_URL.",
+            "GoDaddy/Porkbun could not be claimed (OTP); move to plan B: free DuckDNS pointing at Container Apps.",
+            "Jorge creates mani-nova3.duckdns.org by hand; Azure binds hostname, HTTPS certificate, and CORS/PUBLIC_URL.",
         ],
-        resultado="MANI público en https://mani-nova3.duckdns.org (también sigue la URL larga de Azure).",
+        resultado="MANI public at https://mani-nova3.duckdns.org (long Azure URL still works).",
     )
 
     entry_table(
         doc,
         "11:15",
-        "Icono MANI en la APK Android",
+        "MANI icon on the Android APK",
         [
-            "Se usa el logo oficial del parche (mani-logo.png) como icono del launcher en todas las densidades.",
-            "Se regenera la APK de descarga en el sitio con el icono nuevo.",
+            "Use the official patch logo (mani-logo.png) as the launcher icon at all densities.",
+            "Regenerate the downloadable APK on the site with the new icon.",
         ],
-        resultado="Al instalar MANI en Android aparece el logo del equipo en lugar del icono genérico.",
+        resultado="Installing MANI on Android shows the team logo instead of a generic icon.",
     )
 
     entry_table(
         doc,
         "11:35",
-        "Redeploy Azure con APK e icono",
+        "Azure redeploy with APK and icon",
         [
-            "Se publica de nuevo MANI en Azure Container Apps con imagen de tag único (incluye APK con logo, fixes de login/cambio de contraseña y UI reciente).",
-            "Se mantiene el dominio corto DuckDNS, el certificado HTTPS y el correo SMTP ya configurados.",
-            "Health, home y descarga de la APK responden en https://mani-nova3.duckdns.org.",
+            "Republish MANI on Azure Container Apps with a unique image tag (APK with logo, login/password-change fixes, recent UI).",
+            "Keep short DuckDNS domain, HTTPS certificate, and SMTP already configured.",
+            "Health, home, and APK download respond at https://mani-nova3.duckdns.org.",
         ],
-        resultado="Revisión mani-web--0000009 en línea; demo pública actualizada sin tocar el dominio corto.",
+        resultado="Revision mani-web--0000009 live; public demo updated without changing the short domain.",
     )
 
     entry_table(
         doc,
         "12:45",
-        "Entrar como invitado",
+        "Continue as guest",
         [
-            "En login y en la portada: botón «Entrar como invitado» / Continue as guest (ES/EN).",
-            "Sesión con JWT corto sin cuenta en la base; en la app se ve Invitado con nota de solo local.",
-            "Informes y preferencias de invitado quedan en el navegador/WebView; el servidor rechaza guardar historial de guest.",
+            "On login and home: Continue as guest button (ES/EN).",
+            "Short JWT session with no DB account; app shows Guest with local-only note.",
+            "Guest reports and preferences stay in browser/WebView; server rejects guest history saves.",
         ],
-        resultado="Se puede comparar sitios sin registrarse; los datos de invitado no persisten en la nube.",
+        resultado="Sites can be compared without registering; guest data does not persist in the cloud.",
     )
 
     entry_table(
         doc,
         "12:55",
-        "Entrar con cuenta de Google",
+        "Continue with Google",
         [
-            "En login: Continuar con Google / Continue with Google (junto a correo y modo invitado).",
-            "Google Identity Services (ID token): el backend verifica el token, crea o vincula la cuenta por correo y emite el JWT de MANI.",
-            "Código listo; el Client ID Web se crea a continuación en Google Cloud.",
+            "On login: Continue with Google (alongside email and guest).",
+            "Google Identity Services (ID token): backend verifies token, creates or links account by email, issues MANI JWT.",
+            "Code ready; Web Client ID created next in Google Cloud.",
         ],
-        resultado="Auth con Google integrado; email/password e invitado siguen igual.",
+        resultado="Google auth integrated; email/password and guest unchanged.",
     )
 
     entry_table(
         doc,
         "13:00",
-        "Credenciales OAuth de Google para MANI",
+        "Google OAuth credentials for MANI",
         [
-            "En Google Cloud (proyecto AL REVES): cliente OAuth «MANI Web», tipo aplicación web.",
-            "Orígenes: localhost:3100, mani-nova3.duckdns.org y el host de Azure Container Apps.",
-            "Client ID en backend/.env y frontend/.env.local; /auth/google/status responde enabled.",
+            "In Google Cloud (AL REVES project): OAuth client “MANI Web”, web application type.",
+            "Origins: localhost:3100, mani-nova3.duckdns.org, and Azure Container Apps host.",
+            "Client ID in backend/.env and frontend/.env.local; /auth/google/status returns enabled.",
         ],
-        resultado="Google Sign-In habilitado en local; falta propagar el mismo Client ID a producción Azure si se usa allí.",
+        resultado="Google Sign-In enabled locally; same Client ID still needs production Azure if used there.",
     )
 
     entry_table(
         doc,
         "13:25",
-        "Proyecto GCP propio MANI (OAuth)",
+        "Own GCP project MANI (OAuth)",
         [
-            "Se crea el proyecto Google Cloud «MANI» (id mani-nova3), aparte de AL REVES, que queda intacto.",
-            "Consent screen External con nombre MANI; cliente web «MANI Web» con localhost, DuckDNS y Azure.",
-            "Nuevo Client ID en .env local; /auth/google/status vuelve a responder enabled.",
+            "Create Google Cloud project “MANI” (id mani-nova3), separate from AL REVES, which stays untouched.",
+            "External consent screen named MANI; web client “MANI Web” with localhost, DuckDNS, and Azure.",
+            "New Client ID in local .env; /auth/google/status again returns enabled.",
         ],
-        resultado="Login Google de MANI usa su propio proyecto GCP; el juego AL REVES no se tocó.",
+        resultado="MANI Google login uses its own GCP project; AL REVES game untouched.",
     )
 
     entry_table(
         doc,
         "14:00",
-        "Panel admin (engranaje)",
+        "Admin panel (gear)",
         [
-            "Con el usuario administrador aparece un botón de engranaje en la barra de la app.",
-            "El panel muestra resumen, usuarios registrados, actividad (inicios y comparaciones) y métricas de sitios/fechas.",
-            "Las consultas e informes quedan registrados para análisis; solo el rol admin puede verlos.",
+            "Admin user sees a gear button in the app bar.",
+            "Panel shows summary, registered users, activity (logins and comparisons), and site/date metrics.",
+            "Queries and reports are logged for analysis; only the admin role can see them.",
         ],
-        resultado="Administración operativa lista en local para revisar uso y sitios con mejor puntuación.",
+        resultado="Operational admin ready locally to review usage and top-scoring sites.",
     )
 
     entry_table(
         doc,
         "14:25",
-        "Redeploy Azure (admin, Google, guest)",
+        "Azure redeploy (admin, Google, guest)",
         [
-            "Nueva imagen en ACR con panel admin, invitado, Google Sign-In y APK con logo MANI.",
-            "Container App actualizada; dominio https://mani-nova3.duckdns.org y certificado intactos.",
-            "GOOGLE_CLIENT_ID y PUBLIC_URL/CORS configurados en el entorno de producción.",
+            "New ACR image with admin panel, guest, Google Sign-In, and APK with MANI logo.",
+            "Container App updated; https://mani-nova3.duckdns.org and certificate intact.",
+            "GOOGLE_CLIENT_ID and PUBLIC_URL/CORS set in the production environment.",
         ],
-        resultado="Demo pública al día en DuckDNS y en la URL larga de Azure.",
+        resultado="Public demo current on DuckDNS and the long Azure URL.",
     )
 
     entry_table(
         doc,
         "15:25",
-        "Vista a pie estable en Malapert",
+        "Stable standing view at Malapert",
         [
-            "La vista «de pie en el sitio» se caía en Cesium (pantalla negra y error de render) al cargar el relieve LOLA cerca del ojo.",
-            "Se limita el detalle del terreno y se coloca la cámara sobre la altura del mismo heightmap que se dibuja, con Sol/Tierra y el control de tiempo intactos.",
+            "“Standing on the site” view crashed in Cesium (black screen / render error) loading LOLA relief near the eye.",
+            "Limit terrain detail and place the camera on the same heightmap elevation that is drawn, with Sun/Earth and time control intact.",
         ],
-        resultado="En Malapert (y el resto de sitios) se puede mirar 360° sin que el render se detenga.",
+        resultado="At Malapert (and other sites) a 360° look works without stopping the render.",
     )
 
     entry_table(
         doc,
         "15:41",
-        "Vista a pie sin congelar MANI",
+        "Standing view without freezing MANI",
         [
-            "Al abrir «de pie en el sitio» toda la app se quedaba pegada: el anclaje de cámara y el DEM pelean con Cesium cada fotograma.",
-            "Se ancla el punto una sola vez, se mira solo con el ratón, y en esta vista se usa el elipsoide + imágenes Moon Trek (sin tormenta de tiles LOLA).",
-            "Close, scrubber de tiempo y Sol/Tierra siguen respondiendo.",
+            "Opening “standing on the site” froze the whole app: camera anchoring and DEM fought Cesium every frame.",
+            "Anchor the point once, look with the mouse only, and in this view use ellipsoid + Moon Trek imagery (no LOLA tile storm).",
+            "Close, time scrubber, and Sun/Earth keep responding.",
         ],
-        resultado="La modal de pie abre sin congelar MANI; mirada 360° y control de tiempo usables.",
+        resultado="Standing modal opens without freezing MANI; 360° look and time control usable.",
     )
 
     entry_table(
         doc,
         "16:25",
-        "Barra de carga 0–100% en vista a pie",
+        "0–100% loading bar in standing view",
         [
-            "Al abrir el ojo (pestaña ground) se muestra una barra 0→100% hasta que el terreno lunar está listo.",
-            "El progreso sigue el viewer, las imágenes, la cámara, la muestra de altura y las teselas LOLA; luego un fade único revela la simulación.",
-            "Look y Sol/Tierra se habilitan al completar; no vuelve a bloquear por refinamiento de tiles.",
+            "Opening the eye (ground tab) shows a 0→100% bar until lunar terrain is ready.",
+            "Progress follows viewer, imagery, camera, height sample, and LOLA tiles; then a single fade reveals the simulation.",
+            "Look and Sun/Earth enable on complete; no further block from tile refinement.",
         ],
-        resultado="La vista a pie espera con barra clara y se abre sin parpadeos a medias.",
+        resultado="Standing view waits with a clear bar and opens without half-finished flicker.",
     )
 
     entry_table(
         doc,
         "16:32",
-        "Carga del ojo ya no se queda en 55%",
+        "Eye load no longer stuck at 55%",
         [
-            "La barra se congelaba en 55% y a veces caía la pestaña: el DEM LOLA a altura de ojo bloqueaba las teselas y podía tumbar Cesium.",
-            "Primera pintura con elipsoide + imágenes Moon Trek; la barra avanza y revela en ~7 s (estabilidad).",
-            "El equipo pide volver: hay que estar de pie sobre el relieve LOLA, no sobre el elipsoide plano.",
+            "Bar froze at 55% and sometimes crashed the tab: LOLA DEM at eye height blocked tiles and could take Cesium down.",
+            "First paint with ellipsoid + Moon Trek imagery; bar advances and reveals in ~7 s (stability).",
+            "Team asks to restore: stand on LOLA relief, not a flat ellipsoid.",
         ],
-        resultado="La barra llega a 100% sin tumbar la pestaña; queda pendiente recuperar el DEM bajo los pies.",
+        resultado="Bar reaches 100% without crashing the tab; DEM underfoot still to restore.",
     )
 
     entry_table(
         doc,
         "16:40",
-        "De pie otra vez sobre el terreno LOLA",
+        "Standing again on LOLA terrain",
         [
-            "Se revierte el elipsoide de primera pintura: el DEM LOLA se monta desde el arranque (detalle moderado).",
-            "Una sola muestra de altura coloca el ojo ~120 m sobre el relieve; la barra 0–100% sigue completando por reloj (~8 s) sin esperar a que las teselas queden en cero.",
-            "Si Cesium falla al renderizar, se baja detalle y exageración antes de soltar el DEM; solo en último caso se avisa y se usa elipsoide.",
+            "Revert first-paint ellipsoid: LOLA DEM mounts from start (moderate detail).",
+            "One height sample places the eye ~120 m above relief; 0–100% bar still completes on a clock (~8 s) without waiting for zero tiles.",
+            "If Cesium fails to render, lower detail and exaggeration before dropping DEM; only as last resort warn and use ellipsoid.",
         ],
-        resultado="La vista a pie vuelve a estar sobre el terreno 3D LOLA, con barra de carga y sin bucles que congelen MANI.",
+        resultado="Standing view is back on 3D LOLA terrain, with loading bar and without freeze loops.",
     )
 
-    heading(doc, "Pendiente del domingo")
-    bullet(doc, "Ensayo de la demo y guion/video (André).")
-    bullet(doc, "Ajuste fino de UI y pitch; entrega de la ficha.")
+    entry_table(
+        doc,
+        "18:30",
+        "GitHub published, About link, and video done",
+        [
+            "Public GitHub repository published: https://github.com/jorkiller9201-source/MANI.",
+            "About in the app (EN+ES) now links to that repository so visitors can open the source.",
+            "André’s English pitch/demo video is completed today, Sunday 15 November 2026, at this hour — no longer pending.",
+            "Project log converted to English; SI declaration and README note the repo and completed video.",
+        ],
+        resultado="Repo public with About link; André’s video marked completed for Sunday evening delivery.",
+    )
 
-    heading(doc, "Criterio de cierre del sábado")
+    entry_table(
+        doc,
+        "18:40",
+        "Azure redeploy with standing (ground) view",
+        [
+            "New Docker image from the local working tree (ground-view fixes included) pushed to ACR acrmani95190.",
+            "Container App mani-web revision updated; production secrets (SECRET_KEY, SMTP, Google) kept intact.",
+            "PUBLIC_URL and CORS remain on https://mani-nova3.duckdns.org plus the Azure host.",
+        ],
+        resultado="Public demo healthy: DuckDNS and Azure /health 200; /app/ground responds.",
+    )
+
+    heading(doc, "Sunday evening — completed")
+    bullet(doc, "André’s English pitch/demo video: completed Sunday 15 November 2026 (~18:30 Tegucigalpa).")
+    bullet(doc, "GitHub repository published and linked from About: https://github.com/jorkiller9201-source/MANI.")
+    bullet(doc, "Project log available in English for the submission narrative.")
+    bullet(doc, "Azure public demo redeployed with standing/ground view (~18:40).")
+
+    heading(doc, "Sunday closing criterion")
     callout(
         doc,
         [
             (
-                "El sábado sale bien si se pueden señalar dos lugares, se ven las horas de Sol y de Tierra, André puede decir en inglés cuál gana y por qué, y la aplicación abre sin internet.",
+                "Sunday succeeds if two sites can be selected, Sun and Earth hours are visible, André’s English video explains the winner, the app supports offline comparison (embedded Horizons), and the project page / SI declaration / repo are ready for delivery.",
                 {"size": 11, "bold": True, "color": NAVY},
             ),
         ],
@@ -852,7 +897,7 @@ def main():
 
     body(
         doc,
-        "— Continúa.",
+        "— End of Sunday evening entry.",
         italic=True,
         color=MUTED,
         space_before=8,

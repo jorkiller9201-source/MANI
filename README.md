@@ -26,6 +26,10 @@ Admin seed: `admin@mani.nova3` / `Nova3Mani!` (or register a new account).
 | Oracle HTTPS | 9543 (`https://158.101.2.100:9543`) |
 | Azure (público) | `https://mani-web.ashysky-26ab9584.eastus.azurecontainerapps.io` |
 
+## Repository
+
+- GitHub: [https://github.com/jorkiller9201-source/MANI](https://github.com/jorkiller9201-source/MANI)
+
 ## Docs
 
 - [Deploy](docs/DEPLOY.md)
