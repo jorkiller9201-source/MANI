@@ -5,10 +5,9 @@ import { dataApi, type SkySnapshot } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nProvider";
 import { MOON_SCENE_FAR_M } from "@/modules/moon/celestial";
 import {
-  createLolaTerrainProvider,
-  GROUND_LOLA_EXAGGERATION,
-  GROUND_LOLA_MAX_LEVEL,
-} from "@/modules/moon/lolaTerrain";
+  addGroundDiskPrimitive,
+  addHorizonRingPrimitive,
+} from "@/modules/ground/lolaHorizonMesh";
 
 const TREK_WAC =
   "/moon-tiles/Moon/EQ/LRO_WAC_Mosaic_Global_303ppd_v02/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
@@ -16,17 +15,20 @@ const TREK_LOLA_RELIEF =
   "/moon-tiles/Moon/EQ/LRO_LOLA_ClrShade_Global_128ppd_v04/1.0.0/default/default028mm/{z}/{y}/{x}.png";
 
 /**
- * Eye standing ON LOLA DEM (AGL ~120 m). DEM mounts from boot; one timed height sample
- * places the camera. Load gate never waits forever for tile queue=0; wall-clock forces 100%.
+ * Eye standing at catalog/API DEM height + AGL. Globe uses EllipsoidTerrainProvider
+ * (CustomHeightmapTerrainProvider at eye → Invalid array length / freezes).
+ * Visible relief = local LOLA horizon ring + ground disk — real mask heights, no DEM quadtree.
+ *
+ * Standing eye = 2.0 m AGL above the same surface used for the pad/ring.
+ * South-pole LOLA DEM is often negative vs the Moon ellipsoid (height 0); placing the
+ * eye at raw demH buries the camera under the globe — lift negative DEM to the ellipsoid
+ * for render so pad + eye stay above the visible surface together.
  */
-const EYE_HEIGHT_M = 120;
-/** One-shot sampleHeightMostDetailed — never from tileLoad / preRender loops. */
-const TERRAIN_SAMPLE_TIMEOUT_MS = 2800;
+const EYE_HEIGHT_M = 2.0;
 /**
- * Wall-clock max from Viewer create. Must not depend on tileLoadProgressEvent hitting 0
- * (DEM/tile storms can freeze the main thread before a late timeout fires).
+ * Wall-clock max from Viewer create. Must not depend on tileLoadProgressEvent hitting 0.
  */
-const LOAD_GATE_TIMEOUT_MS = 8_000;
+const LOAD_GATE_TIMEOUT_MS = 6_000;
 /** Artificial bar creep after 55% so the UI never looks frozen while tiles settle. */
 const PROGRESS_SMOOTH_INTERVAL_MS = 200;
 /** After camera+height, allow reveal without waiting for DEM tile idle. */
@@ -37,12 +39,23 @@ const LOAD_FADE_MS = 480;
  * Cesium SkyBox scales its cube by frustum.far; 50 km clips the starfield to a black void.
  * Match MoonMap's far band so stars render; keep near>0 (NaN near → Invalid array length).
  */
-const GROUND_NEAR_M = 1;
+const GROUND_NEAR_M = 0.5;
 const GROUND_FAR_M = MOON_SCENE_FAR_M;
 const GROUND_MAX_FAR_NEAR = MOON_SCENE_FAR_M * 2;
 const BODY_RANGE_M = 25_000;
-/** Soft pin tolerance — only rewrite camera.position if SSC drifted this far (m). */
-const EYE_DRIFT_M = 2;
+/** Soft pin tolerance — well under AGL so a drift never sinks the eye under the pad. */
+const EYE_DRIFT_M = 0.35;
+
+/**
+ * DEM/catalog height for mesh + eye. Ellipsoid globe is height 0; negative LOLA DEM
+ * would put pad/eye under the textured surface — lift to a thin clearance above it.
+ */
+function standingSurfaceForRender(surfaceHm: number): number {
+  if (!Number.isFinite(surfaceHm)) return 0.05;
+  return surfaceHm < 0 ? 0.05 : surfaceHm;
+}
+/** Fixed perspective FOV (rad). No zoom — look-only yaw/pitch. */
+const GROUND_FOV_DEFAULT = (70 * Math.PI) / 180;
 /** Minimum screen separation between Sol and Tierra HUD marks (px). */
 const HUD_SEP_PX = 64;
 const RENDER_RECOVERY_COOLDOWN_MS = 1500;
@@ -224,7 +237,9 @@ export default function SiteGroundView({
   const skyRef = useRef<SkySnapshot | null>(null);
   const [demHeightM, setDemHeightM] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
-  const eyeHeightRef = useRef((elevKm || 0) * 1000 + EYE_HEIGHT_M);
+  const eyeHeightRef = useRef(
+    standingSurfaceForRender((elevKm || 0) * 1000) + EYE_HEIGHT_M
+  );
 
   const t0 = useMemo(() => parseIso(startIso), [startIso]);
   const t1 = useMemo(
@@ -265,12 +280,16 @@ export default function SiteGroundView({
       setTerrainNote("");
       try {
         let demH: number | null = null;
+        let horizonElevDeg: number[] = [];
         try {
           const h = await dataApi.horizon({ lat, lon, site_id: siteId });
           if (h.dem_height_m != null && Number.isFinite(h.dem_height_m)) demH = h.dem_height_m;
+          if (Array.isArray(h.horizon_elev_deg) && h.horizon_elev_deg.length >= 8) {
+            horizonElevDeg = h.horizon_elev_deg;
+          }
           if (!destroyed) setDemHeightM(demH);
         } catch {
-          /* terrain still works without mask metadata */
+          /* standing pad still works with elevKm fallback */
         }
 
         (window as any).CESIUM_BASE_URL = "/cesium/";
@@ -296,12 +315,9 @@ export default function SiteGroundView({
         let gateDone = false;
         let shownPct = 0;
         let sscRef: any = null;
-        let terrainStripped = false;
-        let demMaxLevel = GROUND_LOLA_MAX_LEVEL;
-        let demExaggeration = GROUND_LOLA_EXAGGERATION;
         let placeCameraFn: ((surfaceHm?: number, preserveLook?: boolean) => void) | null = null;
-        let stripToEllipsoidFn: (() => void) | null = null;
-        let remountDemFn: ((maxLevel: number, exaggeration: number) => boolean) | null = null;
+        /** After load gate: custom drag look (ENU yaw/pitch, roll=0). Never SSC look. */
+        let lookInputEnabled = false;
 
         const clearGateTimers = () => {
           if (gateTimer != null) {
@@ -376,11 +392,13 @@ export default function SiteGroundView({
           clearGateTimers();
           shownPct = 100;
           if (!destroyed) setLoadProgress(100);
+          // Keep SSC look off — custom ENU yaw/pitch keeps roll=0 vs local horizon.
           try {
-            if (sscRef) sscRef.enableLook = true;
+            if (sscRef) sscRef.enableLook = false;
           } catch {
             /* ignore */
           }
+          lookInputEnabled = true;
           if (!destroyed) {
             setLoadFading(true);
             window.setTimeout(() => {
@@ -484,7 +502,7 @@ export default function SiteGroundView({
         // Keep unlit imagery; stars come from SkyBox (needs MOON_SCENE_FAR_M, not 50 km).
         viewer.scene.globe.enableLighting = false;
         viewer.scene.globe.dynamicAtmosphereLighting = false;
-        // Depth-test vs terrain at eye height often eats the near mesh; keep off for ground view.
+        // Local mesh is a Primitive (not globe terrain); depth-test against terrain unused.
         viewer.scene.globe.depthTestAgainstTerrain = false;
         viewer.scene.backgroundColor = Cesium.Color.BLACK;
         viewer.scene.fog.enabled = false;
@@ -525,7 +543,7 @@ export default function SiteGroundView({
           try {
             const canvas = viewer.scene.canvas;
             const pf = new Cesium.PerspectiveFrustum();
-            pf.fov = Cesium.Math.toRadians(70);
+            pf.fov = GROUND_FOV_DEFAULT;
             pf.aspectRatio =
               Math.max(2, canvas?.clientWidth || 2) / Math.max(2, canvas?.clientHeight || 2);
             pf.near = GROUND_NEAR_M;
@@ -580,58 +598,50 @@ export default function SiteGroundView({
           /* older Cesium */
         }
 
-        const applyEllipsoidTerrain = () => {
-          if (Cesium.EllipsoidTerrainProvider) {
-            viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider({
-              ellipsoid: moonEllipsoid,
-            });
-          }
-          if (typeof viewer.scene.globe.terrainExaggeration === "number") {
-            viewer.scene.globe.terrainExaggeration = 1;
-          }
-        };
-
-        /** Mount / remount LOLA DEM. Prefer staying on terrain; ellipsoid only as last resort. */
-        const remountDem = (maxLevel: number, exaggeration: number): boolean => {
-          if (destroyed || viewer.isDestroyed?.() || terrainStripped) return false;
-          try {
-            const lolaTerrain = createLolaTerrainProvider(Cesium, moonEllipsoid, maxLevel);
-            if (!lolaTerrain) return false;
-            demMaxLevel = maxLevel;
-            demExaggeration = exaggeration;
-            viewer.terrainProvider = lolaTerrain;
-            if (typeof viewer.scene.globe.terrainExaggeration === "number") {
-              viewer.scene.globe.terrainExaggeration = exaggeration;
-            }
-            viewer.scene.requestRender();
-            return true;
-          } catch {
-            return false;
-          }
-        };
-        remountDemFn = remountDem;
-
-        stripToEllipsoidFn = () => {
-          if (terrainStripped || destroyed || viewer.isDestroyed?.()) return;
-          terrainStripped = true;
-          try {
-            applyEllipsoidTerrain();
-            viewer.scene.requestRender();
-            if (!destroyed) setTerrainNote(tRef.current("groundTerrainFallback"));
-          } catch {
-            /* ignore */
-          }
-        };
-
-        // LOLA DEM from the start — eye must stand on 3D relief, not flat ellipsoid.
-        const demOk = remountDem(demMaxLevel, demExaggeration);
-        if (!demOk) {
-          applyEllipsoidTerrain();
-          if (!destroyed) setTerrainNote(tRef.current("groundTerrainFallback"));
+        // Stable globe: ellipsoid only. Relief is a local LOLA horizon mesh (no DEM quadtree).
+        if (Cesium.EllipsoidTerrainProvider) {
+          viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider({
+            ellipsoid: moonEllipsoid,
+          });
+        }
+        if (typeof viewer.scene.globe.terrainExaggeration === "number") {
+          viewer.scene.globe.terrainExaggeration = 1;
         }
         loadBits.dem = true;
         loadBits.imagery = true;
         pushProgress();
+
+        // Standing pad + 360° LOLA mountain ring — same surface height as the eye.
+        const catalogSurfaceM =
+          demH != null && Number.isFinite(demH)
+            ? demH
+            : Number.isFinite(elevKm * 1000)
+              ? elevKm * 1000
+              : 0;
+        const surfaceForMesh = standingSurfaceForRender(catalogSurfaceM);
+        try {
+          const disk = addGroundDiskPrimitive(
+            Cesium,
+            moonEllipsoid,
+            lat,
+            lon,
+            surfaceForMesh
+          );
+          if (disk) viewer.scene.primitives.add(disk);
+          if (horizonElevDeg.length >= 8) {
+            const ring = addHorizonRingPrimitive(Cesium, moonEllipsoid, {
+              lat,
+              lon,
+              demHeightM: surfaceForMesh,
+              horizonElevDeg,
+            });
+            if (ring) viewer.scene.primitives.add(ring);
+          } else if (!destroyed) {
+            setTerrainNote(tRef.current("groundTerrainFallback"));
+          }
+        } catch {
+          if (!destroyed) setTerrainNote(tRef.current("groundTerrainFallback"));
+        }
 
         // Invisible anchors for world positions (HUD draws the visible Sol/Tierra).
         viewer.entities.add({
@@ -649,7 +659,8 @@ export default function SiteGroundView({
           label: { show: false, text: tRef.current("skyEarth") },
         });
 
-        // Fixed standing point: look only (no walk / pan / dolly). Look stays off until load gate.
+        // Fixed standing point: no walk / pan / zoom / SSC look (roll banks on yaw).
+        // Custom pointer look = ENU yaw/pitch, roll=0. FOV fixed; eye pinned.
         const ssc = viewer.scene.screenSpaceCameraController;
         sscRef = ssc;
         ssc.enableCollisionDetection = false;
@@ -661,13 +672,10 @@ export default function SiteGroundView({
         ssc.inertiaSpin = 0;
         ssc.inertiaTranslate = 0;
         ssc.inertiaZoom = 0;
-        ssc.maximumZoomDistance = 50;
-        ssc.minimumZoomDistance = 1;
-        ssc.lookEventTypes = [
-          Cesium.CameraEventType.LEFT_DRAG,
-          Cesium.CameraEventType.RIGHT_DRAG,
-          Cesium.CameraEventType.MIDDLE_DRAG,
-        ];
+        if (typeof ssc.minimumZoomDistance === "number") ssc.minimumZoomDistance = 0.1;
+        if (typeof ssc.maximumZoomDistance === "number") {
+          ssc.maximumZoomDistance = Number.POSITIVE_INFINITY;
+        }
 
         const eyeFixed = new Cesium.Cartesian3();
         const eyeEnu = new Cesium.Matrix4();
@@ -681,15 +689,27 @@ export default function SiteGroundView({
         let lastHeadingUi = -999;
         let placedHeading = 0;
         let placedPitch = Cesium.Math.toRadians(-6);
-        let renderRecoveries = 0;
         let lastRenderRecoveryMs = 0;
         let frustumHoldFrames = 0;
         let lastNanRecoverMs = 0;
+        let lookDragging = false;
+        let lookLastX = 0;
+        let lookLastY = 0;
         /** Wall-clock from Viewer create — always reveal even if tiles never idle. */
         gateTimer = window.setTimeout(forceFinishGate, LOAD_GATE_TIMEOUT_MS);
 
+        const syncHeadingUi = (heading: number) => {
+          const deg = Cesium.Math.toDegrees(heading);
+          if (Math.abs(deg - lastHeadingUi) < 2) return;
+          lastHeadingUi = deg;
+          if (headingLabelRef.current) {
+            headingLabelRef.current.textContent = `${deg.toFixed(0)}°`;
+          }
+        };
+
         /**
-         * Initial / recovery pose only — NEVER call from preRender every frame.
+         * Pose from heading+pitch in local ENU — roll always 0 vs geodetic up.
+         * Call on place / look input / rare recovery — NEVER every preRender frame.
          * lookAtTransform(..., range=0) → NaN direction → Invalid array length.
          */
         const applyEyeFrame = (heading: number, pitch: number) => {
@@ -699,6 +719,8 @@ export default function SiteGroundView({
             PITCH_MIN,
             PITCH_MAX
           );
+          placedHeading = h;
+          placedPitch = p;
           Cesium.Transforms.eastNorthUpToFixedFrame(eyeFixed, moonEllipsoid, eyeEnu);
           viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
           viewer.camera.constrainedAxis = undefined;
@@ -707,6 +729,7 @@ export default function SiteGroundView({
           const sinPitch = Math.sin(p);
           const sinH = Math.sin(h);
           const cosH = Math.cos(h);
+          // ENU: +X east, +Y north, +Z up — yaw around up, pitch only, roll=0.
           scratchLocalDir.x = sinH * cosPitch;
           scratchLocalDir.y = cosH * cosPitch;
           scratchLocalDir.z = sinPitch;
@@ -736,11 +759,12 @@ export default function SiteGroundView({
             orientation: { direction: scratchDir, up: scratchUp },
           });
           lockGroundFrustum();
+          syncHeadingUi(h);
         };
 
         /**
-         * Cheap per-frame work: soft-pin position, pitch nudge via lookUp, DOM heading.
-         * No setView, no setState, no height sampling, no tile work.
+         * Cheap per-frame work: soft-pin position only (+ rare NaN recovery).
+         * No setView every frame, no lookUp (that banks), no setState / DEM.
          */
         const lockPose = () => {
           if (!eyeReady || destroyed || viewer.isDestroyed?.()) return;
@@ -756,8 +780,9 @@ export default function SiteGroundView({
               cam.lookAtTransform(Cesium.Matrix4.IDENTITY);
             }
 
+            // Soft-pin keeps lat/lon/height = surface + 2 m AGL (never under pad/ellipsoid).
             const drift = Cesium.Cartesian3.distance(cam.position, eyeFixed);
-            if (Number.isFinite(drift) && drift > EYE_DRIFT_M) {
+            if (!Number.isFinite(drift) || drift > EYE_DRIFT_M) {
               Cesium.Cartesian3.clone(eyeFixed, cam.position);
             }
 
@@ -774,46 +799,92 @@ export default function SiteGroundView({
                 lastNanRecoverMs = now;
                 applyEyeFrame(placedHeading, placedPitch);
               }
-              return;
-            }
-
-            let pitch = cam.pitch;
-            if (!Number.isFinite(pitch)) pitch = placedPitch;
-            if (pitch < PITCH_MIN) {
-              cam.lookUp(PITCH_MIN - pitch);
-            } else if (pitch > PITCH_MAX) {
-              cam.lookUp(-(pitch - PITCH_MAX));
-            }
-
-            let heading = cam.heading;
-            if (!Number.isFinite(heading)) heading = 0;
-            const deg = Cesium.Math.toDegrees(heading);
-            if (Math.abs(deg - lastHeadingUi) >= 2) {
-              lastHeadingUi = deg;
-              if (headingLabelRef.current) {
-                headingLabelRef.current.textContent = `${deg.toFixed(0)}°`;
-              }
             }
           } catch {
             /* ignore */
           }
         };
 
+        const canvas = viewer.scene.canvas as HTMLCanvasElement;
+        const onLookPointerDown = (e: PointerEvent) => {
+          if (!lookInputEnabled || !eyeReady || destroyed) return;
+          if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+          lookDragging = true;
+          lookLastX = e.clientX;
+          lookLastY = e.clientY;
+          try {
+            canvas.setPointerCapture(e.pointerId);
+          } catch {
+            /* ignore */
+          }
+          e.preventDefault();
+        };
+        const onLookPointerMove = (e: PointerEvent) => {
+          if (!lookDragging || !lookInputEnabled || !eyeReady || destroyed) return;
+          const dx = e.clientX - lookLastX;
+          const dy = e.clientY - lookLastY;
+          lookLastX = e.clientX;
+          lookLastY = e.clientY;
+          if (dx === 0 && dy === 0) return;
+          const hCanvas = Math.max(1, canvas.clientHeight);
+          const fovy =
+            typeof viewer.camera.frustum?.fovy === "number" && viewer.camera.frustum.fovy > 0
+              ? viewer.camera.frustum.fovy
+              : GROUND_FOV_DEFAULT;
+          const sens = fovy / hCanvas;
+          // Horizontal = yaw around local UP; vertical = pitch only (roll stays 0).
+          applyEyeFrame(placedHeading + dx * sens, placedPitch - dy * sens);
+          viewer.scene.requestRender();
+        };
+        const onLookPointerUp = (e: PointerEvent) => {
+          if (!lookDragging) return;
+          lookDragging = false;
+          try {
+            canvas.releasePointerCapture(e.pointerId);
+          } catch {
+            /* ignore */
+          }
+        };
+        const onLookContextMenu = (e: Event) => {
+          if (lookInputEnabled) e.preventDefault();
+        };
+        /** Swallow wheel/pinch so nothing zooms (SSC zoom already off; FOV stays fixed). */
+        const onLookWheel = (e: WheelEvent) => {
+          if (!lookInputEnabled) return;
+          e.preventDefault();
+        };
+        canvas.addEventListener("pointerdown", onLookPointerDown);
+        canvas.addEventListener("pointermove", onLookPointerMove);
+        canvas.addEventListener("pointerup", onLookPointerUp);
+        canvas.addEventListener("pointercancel", onLookPointerUp);
+        canvas.addEventListener("contextmenu", onLookContextMenu);
+        canvas.addEventListener("wheel", onLookWheel, { passive: false });
+        (viewer as any).__maniGroundLookCleanup = () => {
+          canvas.removeEventListener("pointerdown", onLookPointerDown);
+          canvas.removeEventListener("pointermove", onLookPointerMove);
+          canvas.removeEventListener("pointerup", onLookPointerUp);
+          canvas.removeEventListener("pointercancel", onLookPointerUp);
+          canvas.removeEventListener("contextmenu", onLookContextMenu);
+          canvas.removeEventListener("wheel", onLookWheel);
+        };
+
         const apiFallbackH = demH ?? elevKm * 1000;
         let initialPlaceDone = false;
 
         /**
-         * Place at surface + eye AGL (~120 m). Catalog first, then one timed DEM sample.
+         * Place at standing surface + 2.0 m AGL (same height as pad/ring).
+         * Negative LOLA DEM is lifted to the ellipsoid so the eye is never under the globe.
          * Never call from tileLoad / preRender loops.
          */
         const placeCamera = (surfaceHm?: number, preserveLook = false) => {
           if (destroyed || viewer.isDestroyed?.()) return;
-          const surfaceH =
+          const rawSurface =
             surfaceHm != null && Number.isFinite(surfaceHm)
               ? surfaceHm
               : Number.isFinite(apiFallbackH)
                 ? apiFallbackH
                 : 0;
+          const surfaceH = standingSurfaceForRender(rawSurface);
           const eye = surfaceH + EYE_HEIGHT_M;
           if (!Number.isFinite(eye)) return;
           eyeHeightRef.current = eye;
@@ -882,76 +953,19 @@ export default function SiteGroundView({
             return;
           }
           lastRenderRecoveryMs = now;
-          renderRecoveries += 1;
-
           try {
-            // Prefer staying on terrain: clamp camera, then lower LOD / exaggeration.
-            if (renderRecoveries === 1 && !terrainStripped) {
-              if (typeof viewer.scene.globe.maximumScreenSpaceError === "number") {
-                viewer.scene.globe.maximumScreenSpaceError = Math.max(
-                  16,
-                  viewer.scene.globe.maximumScreenSpaceError
-                );
-              }
-              if (typeof viewer.scene.globe.terrainExaggeration === "number") {
-                demExaggeration = Math.min(demExaggeration, 1.0);
-                viewer.scene.globe.terrainExaggeration = demExaggeration;
-              }
-              clampCameraAfterError();
-            } else if (renderRecoveries === 2 && !terrainStripped) {
-              const lower = Math.max(3, Math.min(demMaxLevel, 4));
-              remountDemFn?.(lower, 1.0);
-              clampCameraAfterError();
-            } else {
-              // Last resort — strip DEM so the tab stays usable.
-              stripToEllipsoidFn?.();
-              clampCameraAfterError();
-            }
+            clampCameraAfterError();
           } catch {
-            stripToEllipsoidFn?.();
+            /* ignore */
           }
           forceFinishGate();
         };
         viewer.scene.renderError.addEventListener(onRenderError);
         (viewer as any).__maniGroundRenderError = onRenderError;
 
-        // Catalog height first (safe eye), then ONE timed DEM sample — no tileLoad resample.
-        placeCamera();
-
-        void (async () => {
-          let sampled: number | null = null;
-          try {
-            if (!terrainStripped && demOk) {
-              const carto = Cesium.Cartographic.fromDegrees(lon, lat);
-              if (typeof viewer.scene.sampleHeightMostDetailed === "function") {
-                const result = await Promise.race([
-                  viewer.scene.sampleHeightMostDetailed([carto]),
-                  new Promise<null>((r) =>
-                    setTimeout(() => r(null), TERRAIN_SAMPLE_TIMEOUT_MS)
-                  ),
-                ]);
-                const h = Array.isArray(result) ? result[0]?.height : undefined;
-                if (typeof h === "number" && Number.isFinite(h)) sampled = h;
-              }
-              if (
-                sampled == null &&
-                typeof viewer.scene.globe.getHeight === "function"
-              ) {
-                const gh = viewer.scene.globe.getHeight(carto);
-                if (typeof gh === "number" && Number.isFinite(gh)) sampled = gh;
-              }
-            }
-          } catch {
-            /* catalog height already applied */
-          }
-          if (destroyed || viewer.isDestroyed?.()) return;
-          // Refine eye even if the load gate already closed (tiles may still stream).
-          if (sampled != null) {
-            placeCamera(sampled, true);
-            if (!destroyed) setDemHeightM(sampled);
-          }
-          markHeightDone();
-        })();
+        // Place once at API/catalog DEM height — no sampleHeight / tileLoad resample loops.
+        placeCamera(demH ?? undefined);
+        markHeightDone();
 
         // Soft idle if Cesium never reports remaining===0 (DEM tiles may keep streaming).
         window.setTimeout(() => {
@@ -1028,6 +1042,7 @@ export default function SiteGroundView({
       const v = viewerRef.current;
       if (v && !v.isDestroyed?.()) {
         try {
+          if (typeof v.__maniGroundLookCleanup === "function") v.__maniGroundLookCleanup();
           if (v.__maniGroundLockPose) v.scene.preRender.removeEventListener(v.__maniGroundLockPose);
           if (v.__maniGroundRenderError) v.scene.renderError.removeEventListener(v.__maniGroundRenderError);
           if (v.__maniGroundTileProgress) {
@@ -1366,7 +1381,7 @@ export default function SiteGroundView({
       )}
       {sky && (
         <p className="mt-2 text-[11px] text-white/45">
-          {t("groundSkySource")}: {sky.source || sky.mode} · NASA Moon Trek / LOLA DEM + shaded relief
+          {t("groundSkySource")}: {sky.source || sky.mode} · LOLA horizon mesh + Moon Trek imagery
         </p>
       )}
     </>
